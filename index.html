@@ -15,6 +15,10 @@
     </header>
     <div id="cat-grid" class="cat-grid" role="list"></div>
     <div class="select-footer">
+      <div class="hat-picker">
+        <div class="hat-title">Dress-up <span id="star-total" class="star-total"></span></div>
+        <div id="hat-row" class="hat-row" role="radiogroup" aria-label="Choose a hat"></div>
+      </div>
       <div id="cat-details" class="cat-details" aria-live="polite"></div>
       <button id="start-btn" class="big-btn" disabled>Pick a cat</button>
     </div>
@@ -152,8 +156,11 @@
 
     <div class="stage">
       <div id="bubble" class="bubble">Meow?</div>
+      <div id="wish" class="wish" aria-live="polite"><div class="wish-ring"><span class="wish-icon"></span></div><span class="wish-label">I want…</span></div>
+      <div id="combo" class="combo" aria-live="polite"></div>
       <div id="cat-holder" class="cat-holder" title="Click to pet!"></div>
       <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
+      <div id="events-layer" class="events-layer"></div>
     </div>
 
     <div class="actions" id="actions">
@@ -169,8 +176,10 @@
     <div class="win-card">
       <div id="win-cat" class="win-cat"></div>
       <h2 id="win-title">Purr-fectly happy!</h2>
+      <div id="win-stars" class="win-stars"></div>
       <p id="win-stats"></p>
       <p id="win-best" class="best"></p>
+      <p id="win-unlock" class="unlock"></p>
       <div class="win-buttons">
         <button id="again-btn" class="big-btn">Play again</button>
         <button id="choose-btn" class="big-btn secondary">Choose another cat</button>

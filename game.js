@@ -70,6 +70,43 @@ const START_HAPPINESS = 10;
 const REPEAT_PENALTY = 0.25;
 const MIN_REPEAT_MULT = 0.25;
 const BORED_WORDS = ['Again? *yawn*', 'Bored now…', 'Something else?', 'Meh.'];
+const DECAY_SCALE = 3;
+
+// Mixing up different actions quickly builds a combo: +1 point at ×3, +2 at ×6.
+const COMBO_WINDOW = 2.5; // seconds between actions to keep the combo alive
+const comboBonus = (n) => Math.min(2, Math.floor(n / 3));
+
+// Every so often the cat wishes for something. Grant it in time for double points.
+const WISH_TIME = 5;
+const WISH_MISS_PENALTY = 4;
+
+// Surprise events that pop up in the room.
+const EVENTS = {
+  mouse:     { emoji: '🐁', label: 'Catch the toy mouse!', points: 8,  weight: 3 },
+  butterfly: { emoji: '🦋', label: 'Catch the butterfly!', points: 6,  weight: 3 },
+  golden:    { emoji: '🌟', label: 'Grab the golden treat!', points: 15, weight: 2 },
+  cucumber:  { emoji: '🥒', label: 'Remove the scary cucumber!', points: 2, weight: 2 },
+};
+const CUCUMBER_DRAIN = 3; // happiness lost per second while the cucumber is there
+
+// Hats are unlocked with stars. Up to 3 stars per cat, based on win time.
+const HATS = [
+  { id: 'none',   name: 'No hat',   emoji: '',   stars: 0 },
+  { id: 'bow',    name: 'Bow',      emoji: '🎀', stars: 1,  x: 134, y: 52, size: 34, rot: 20 },
+  { id: 'flower', name: 'Flower',   emoji: '🌸', stars: 3,  x: 66,  y: 54, size: 32, rot: -20 },
+  { id: 'cap',    name: 'Cap',      emoji: '🧢', stars: 6,  x: 100, y: 52, size: 46, rot: -8 },
+  { id: 'crown',  name: 'Crown',    emoji: '👑', stars: 10, x: 100, y: 50, size: 44, rot: 0 },
+  { id: 'tophat', name: 'Top hat',  emoji: '🎩', stars: 14, x: 100, y: 50, size: 52, rot: 6 },
+  { id: 'grad',   name: 'Grad cap', emoji: '🎓', stars: 18, x: 100, y: 52, size: 50, rot: -6 },
+];
+function starThresholds(cat) {
+  const three = 10 + 8 * cat.decay;
+  return { three, two: three * 1.7 };
+}
+function starsFor(time, cat) {
+  const t = starThresholds(cat);
+  return time <= t.three ? 3 : time <= t.two ? 2 : 1;
+}
 
 const MOODS = [
   { min: 0,  key: 'grumpy',   label: 'Grumpy',   words: ['Hmph.', '…', 'Meow?', '*tail flick*'] },
@@ -80,7 +117,8 @@ const MOODS = [
 
 // ---------- Cat artwork (SVG) ----------
 const OUTLINE = 'rgba(60, 35, 50, .28)';
-function catSVG(c) {
+function catSVG(c, hatId = 'none') {
+  const hat = HATS.find((h) => h.id === hatId);
   const fur = c.body, dark = c.dark;
   let patternBody = '', patternHead = '', tailStroke = fur, tailExtra = '', pawFill = fur, muzzle = '';
   let earFill = fur, chest = c.belly;
@@ -182,6 +220,7 @@ function catSVG(c) {
         <line x1="72" y1="104" x2="38" y2="98"/><line x1="72" y1="109" x2="36" y2="111"/>
         <line x1="128" y1="104" x2="162" y2="98"/><line x1="128" y1="109" x2="164" y2="111"/>
       </g>
+      ${hat && hat.emoji ? `<text class="hat" x="${hat.x}" y="${hat.y}" font-size="${hat.size}" text-anchor="middle" transform="rotate(${hat.rot} ${hat.x} ${hat.y - hat.size / 3})">${hat.emoji}</text>` : ''}
     </g>
   </svg>`;
 }
@@ -198,6 +237,19 @@ function loadBest() {
 }
 function saveBest(map) {
   try { localStorage.setItem('happyKittyBest', JSON.stringify(map)); } catch { /* ignore */ }
+}
+function loadStars() {
+  try { return JSON.parse(localStorage.getItem('happyKittyStars') || '{}'); } catch { return {}; }
+}
+function saveStars(map) {
+  try { localStorage.setItem('happyKittyStars', JSON.stringify(map)); } catch { /* ignore */ }
+}
+const totalStars = () => Object.values(loadStars()).reduce((a, b) => a + b, 0);
+function loadHat() {
+  try { return localStorage.getItem('happyKittyHat') || 'none'; } catch { return 'none'; }
+}
+function saveHat(id) {
+  try { localStorage.setItem('happyKittyHat', id); } catch { /* ignore */ }
 }
 
 // ---------- Sound (tiny Web Audio synth) ----------
@@ -234,6 +286,13 @@ const Sound = {
       case 'meow':   this.tone(700, 0.35, 'sine', 0.08, 420); break;
       case 'win':    [523, 659, 784, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.22, 'triangle', 0.12, null, i * 0.13)); break;
       case 'nope':   this.tone(200, 0.1, 'square', 0.04); break;
+      case 'wish':   this.tone(880, 0.12, 'sine', 0.08); this.tone(1175, 0.16, 'sine', 0.08, null, 0.1); break;
+      case 'granted': [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.1, null, i * 0.05)); break;
+      case 'miss':   this.tone(440, 0.3, 'triangle', 0.08, 260); break;
+      case 'combo':  this.tone(600, 0.08, 'square', 0.04, 1200); break;
+      case 'squeak': this.tone(1400, 0.06, 'sine', 0.08, 2000); this.tone(1600, 0.06, 'sine', 0.08, 2200, 0.08); break;
+      case 'catch':  this.tone(500, 0.1, 'triangle', 0.1, 1000); this.tone(1000, 0.15, 'triangle', 0.1, 1500, 0.1); break;
+      case 'scare':  this.tone(900, 0.25, 'sawtooth', 0.06, 300); break;
     }
   },
 };
@@ -250,6 +309,8 @@ const els = {
   win: $('#win-overlay'), winCat: $('#win-cat'), winTitle: $('#win-title'),
   winStats: $('#win-stats'), winBest: $('#win-best'), confetti: $('#confetti'),
   sound: $('#sound-btn'),
+  wish: $('#wish'), wishIcon: $('#wish .wish-icon'), combo: $('#combo'), events: $('#events-layer'),
+  winStars: $('#win-stars'), winUnlock: $('#win-unlock'), hatRow: $('#hat-row'), starTotal: $('#star-total'),
 };
 
 const ACTION_LABEL = { pet: 'Petting', toy: 'Toys', treat: 'Treats', catnip: 'Catnip' };
@@ -264,8 +325,41 @@ function difficultyLabel(decay) {
   return { text: 'Picky', paws: 3 };
 }
 
+let selectedHat = loadHat();
+
+function starString(n) {
+  return [0, 1, 2].map((i) => `<span class="${i < n ? 'on' : ''}">★</span>`).join('');
+}
+
+function buildHats() {
+  const stars = totalStars();
+  if (!HATS.some((h) => h.id === selectedHat && h.stars <= stars)) selectedHat = 'none';
+  els.starTotal.textContent = `★ ${stars} / ${CATS.length * 3}`;
+  els.hatRow.innerHTML = '';
+  HATS.forEach((hat) => {
+    const locked = hat.stars > stars;
+    const b = document.createElement('button');
+    b.className = 'hat-btn';
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(hat.id === selectedHat));
+    b.disabled = locked;
+    b.title = locked ? `${hat.name}: unlock with ${hat.stars} ★` : hat.name;
+    b.innerHTML = locked
+      ? `<span class="hat-emoji locked">${hat.emoji}</span><span class="hat-lock">🔒 ${hat.stars}★</span>`
+      : `<span class="hat-emoji">${hat.emoji || '∅'}</span><span class="hat-name">${hat.name}</span>`;
+    b.addEventListener('click', () => {
+      selectedHat = hat.id;
+      saveHat(hat.id);
+      buildSelect();
+    });
+    els.hatRow.appendChild(b);
+  });
+}
+
 function buildSelect() {
+  buildHats();
   const best = loadBest();
+  const stars = loadStars();
   els.grid.innerHTML = '';
   CATS.forEach((cat) => {
     const diff = difficultyLabel(cat.decay);
@@ -274,13 +368,14 @@ function buildSelect() {
     card.setAttribute('role', 'listitem');
     card.dataset.id = cat.id;
     card.innerHTML = `
-      <div class="card-art mood-happy">${catSVG(cat)}</div>
+      <div class="card-art mood-happy">${catSVG(cat, selectedHat)}</div>
       <div class="card-name">${cat.name}</div>
       <div class="card-breed">${cat.breed}</div>
       <div class="card-tags">
         <span class="tag fav">♥ ${ACTION_LABEL[cat.favorite]}</span>
         <span class="tag diff" title="${diff.text}">${'🐾'.repeat(diff.paws)}</span>
       </div>
+      <div class="card-stars" aria-label="${stars[cat.id] || 0} of 3 stars">${starString(stars[cat.id] || 0)}</div>
       ${best[cat.id] ? `<div class="card-best">Best: ${best[cat.id].toFixed(1)}s</div>` : ''}`;
     card.addEventListener('click', () => selectCat(cat));
     card.addEventListener('dblclick', () => { selectCat(cat); startGame(); });
@@ -295,7 +390,8 @@ function selectCat(cat) {
   const diff = difficultyLabel(cat.decay);
   els.details.innerHTML = `
     <strong>${cat.name}</strong> — ${cat.bio}
-    <span class="detail-line">Loves <b>${ACTION_LABEL[cat.favorite].toLowerCase()}</b> (×${FAVORITE_BONUS} points) · Temperament: <b>${diff.text}</b></span>`;
+    <span class="detail-line">Loves <b>${ACTION_LABEL[cat.favorite].toLowerCase()}</b> (×${FAVORITE_BONUS} points) · Temperament: <b>${diff.text}</b></span>
+    <span class="detail-line">★★★ under ${starThresholds(cat).three.toFixed(0)}s · ★★ under ${starThresholds(cat).two.toFixed(0)}s</span>`;
   els.start.disabled = false;
   els.start.textContent = `Play with ${cat.name}!`;
 }
@@ -317,17 +413,23 @@ function startGame() {
   Object.assign(state, {
     cat, happiness: START_HAPPINESS, running: true, startTime: performance.now(),
     elapsed: 0, lastTick: performance.now(), cooldownUntil: {}, counts: { pet: 0, toy: 0, treat: 0, catnip: 0 },
-    moodKey: '', idleTimer: 0, lastAction: null, repeat: 0,
+    moodKey: '', idleTimer: 0, lastAction: null, lastActionAt: -99, repeat: 0,
+    combo: 0, bestCombo: 0,
+    wish: null, nextWishAt: 3, wishesGranted: 0, wishesMissed: 0,
+    event: null, nextEventAt: 6, caught: 0, scared: false,
   });
-  els.holder.innerHTML = catSVG(cat);
+  els.holder.innerHTML = catSVG(cat, selectedHat);
   els.holder.className = 'cat-holder';
   els.hudName.textContent = `${cat.name}'s happiness`;
   els.fx.innerHTML = '';
+  els.events.innerHTML = '';
+  els.wish.classList.remove('show');
+  els.combo.classList.remove('show');
   els.actions.forEach((btn) => {
     const a = btn.dataset.action;
-    const pts = pointsFor(a);
-    btn.querySelector('.pts').textContent = `+${pts}`;
+    btn.querySelector('.pts').textContent = `+${pointsFor(a)}`;
     btn.classList.toggle('favorite', a === cat.favorite);
+    btn.classList.remove('wished');
     btn.title = a === cat.favorite ? `${cat.name}'s favorite!` : '';
   });
   els.win.classList.remove('show');
@@ -335,6 +437,13 @@ function startGame() {
   updateMeter();
   say(`Meow? I'm ${cat.name}.`, 2200);
   requestAnimationFrame(loop);
+}
+
+function stopGame() {
+  state.running = false;
+  clearWish();
+  if (state.event) endEvent();
+  els.combo.classList.remove('show');
 }
 
 function pointsFor(action, raw = false) {
@@ -365,6 +474,12 @@ function updateMeter() {
   }
 }
 
+function addHappiness(pts) {
+  state.happiness = Math.max(0, Math.min(100, state.happiness + pts));
+  updateMeter();
+  if (state.happiness >= 100) win();
+}
+
 function say(text, ms = 1400) {
   els.bubble.textContent = text;
   els.bubble.classList.add('show');
@@ -381,7 +496,8 @@ function loop(now) {
 
   // Happiness slowly fades if you ignore the cat — faster the happier it is.
   const hn = state.happiness / 100;
-  const decay = state.cat.decay * 2 * (1 + 2 * hn * hn) * dt;
+  let decay = state.cat.decay * DECAY_SCALE * (1 + 2 * hn * hn) * dt;
+  if (state.scared) decay += CUCUMBER_DRAIN * dt;
   state.happiness = Math.max(0, state.happiness - decay);
   updateMeter();
 
@@ -399,6 +515,23 @@ function loop(now) {
     }
   });
 
+  // Combo runs out if you wait too long
+  if (state.combo > 0 && state.elapsed - state.lastActionAt > COMBO_WINDOW) {
+    state.combo = 0;
+    els.combo.classList.remove('show');
+  }
+
+  // Wishes
+  if (!state.wish && state.elapsed >= state.nextWishAt) startWish();
+  if (state.wish) {
+    const left = state.wish.until - state.elapsed;
+    if (left <= 0) missWish();
+    else els.wish.style.setProperty('--p', `${(left / WISH_TIME) * 100}`);
+  }
+
+  // Surprise events
+  if (!state.event && state.elapsed >= state.nextEventAt) spawnEvent();
+
   // Occasional idle chatter
   state.idleTimer += dt;
   if (state.idleTimer > 4.5) {
@@ -407,14 +540,15 @@ function loop(now) {
     if (Math.random() < 0.4) Sound.play('meow');
   }
 
-  requestAnimationFrame(loop);
+  if (state.running) requestAnimationFrame(loop);
 }
 
-function doAction(action, originEl) {
+function doAction(action, originEl, { quiet = false } = {}) {
   if (!state.running) return;
   Sound.init();
   const now = performance.now();
   if ((state.cooldownUntil[action] || 0) > now) {
+    if (quiet) return;
     Sound.play('nope');
     const btn = els.actions.find((b) => b.dataset.action === action);
     btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake');
@@ -423,44 +557,237 @@ function doAction(action, originEl) {
   state.cooldownUntil[action] = now + ACTIONS[action].cooldown;
   state.counts[action]++;
   state.idleTimer = 0;
+
+  // Boredom: repeating the same action is worth less
   state.repeat = action === state.lastAction ? state.repeat + 1 : 0;
-  state.lastAction = action;
   const mult = Math.max(MIN_REPEAT_MULT, 1 - REPEAT_PENALTY * state.repeat);
 
-  const pts = Math.max(1, Math.round(pointsFor(action, true) * mult));
-  state.happiness = Math.min(100, state.happiness + pts);
-  updateMeter();
-  Sound.play(action);
+  // Combo: a different action than last time, quickly enough
+  const quick = state.elapsed - state.lastActionAt <= COMBO_WINDOW;
+  state.combo = action !== state.lastAction && quick ? state.combo + 1 : 1;
+  state.bestCombo = Math.max(state.bestCombo, state.combo);
+  state.lastAction = action;
+  state.lastActionAt = state.elapsed;
+  const bonus = comboBonus(state.combo);
 
-  // Visuals
+  // Wish granted?
+  const granted = state.wish && state.wish.action === action;
+
+  let pts = Math.max(1, Math.round(pointsFor(action, true) * mult));
+  if (granted) pts *= 2;
+  pts += bonus;
+
+  Sound.play(action);
   if (originEl) throwItem(action, originEl);
   react(action);
-  floatText(`+${pts}${action === state.cat.favorite ? ' ♥' : ''}`, action);
+  floatText(`+${pts}${action === state.cat.favorite ? ' ♥' : ''}`, `ft-${action}`);
   burstHearts(mult < 0.6 ? 1 : action === 'catnip' ? 8 : action === 'treat' ? 5 : 3);
-  say(mult < 0.6 ? pickRandom(BORED_WORDS) : pickRandom(ACTIONS[action].words));
+  if (granted) grantWish();
+  else say(mult < 0.6 ? pickRandom(BORED_WORDS) : pickRandom(ACTIONS[action].words));
+  showCombo(bonus);
 
-  if (state.happiness >= 100) win();
+  addHappiness(pts);
 }
 
+// ---------- Combos ----------
+function showCombo(bonus) {
+  if (state.combo < 2) { els.combo.classList.remove('show'); return; }
+  els.combo.innerHTML = `Combo <b>×${state.combo}</b>${bonus ? ` <span>+${bonus}</span>` : ''}`;
+  els.combo.classList.add('show');
+  els.combo.classList.remove('pop'); void els.combo.offsetWidth; els.combo.classList.add('pop');
+  if (state.combo % 3 === 0) Sound.play('combo');
+}
+
+// ---------- Wishes ----------
+function startWish() {
+  const options = Object.keys(ACTIONS).filter((a) => a !== state.lastAction);
+  const action = pickRandom(options);
+  state.wish = { action, until: state.elapsed + WISH_TIME };
+  els.wishIcon.textContent = ACTIONS[action].emoji;
+  els.wish.style.setProperty('--p', '100');
+  els.wish.classList.add('show');
+  els.actions.forEach((b) => b.classList.toggle('wished', b.dataset.action === action));
+  Sound.play('wish');
+}
+
+function clearWish() {
+  state.wish = null;
+  els.wish.classList.remove('show');
+  els.actions.forEach((b) => b.classList.remove('wished'));
+}
+
+function grantWish() {
+  state.wishesGranted++;
+  clearWish();
+  state.nextWishAt = state.elapsed + 4 + Math.random() * 4;
+  Sound.play('granted');
+  say('Wish granted! ✨', 1600);
+  floatText('×2 WISH!', 'ft-wish', 0.15);
+  burstHearts(6, ['✨', '⭐', '💫']);
+}
+
+function missWish() {
+  state.wishesMissed++;
+  clearWish();
+  state.nextWishAt = state.elapsed + 3 + Math.random() * 3;
+  Sound.play('miss');
+  say(pickRandom(['Hmph! 😾', 'You forgot…', '*sulks*']), 1600);
+  floatText(`-${WISH_MISS_PENALTY}`, 'ft-miss');
+  addHappiness(-WISH_MISS_PENALTY);
+}
+
+// ---------- Surprise events ----------
+function pickEventType() {
+  const entries = Object.entries(EVENTS).filter(([k]) => k !== 'cucumber' || state.elapsed > 8);
+  let r = Math.random() * entries.reduce((a, [, e]) => a + e.weight, 0);
+  for (const [k, e] of entries) { r -= e.weight; if (r <= 0) return k; }
+  return entries[0][0];
+}
+
+function spawnEvent() {
+  const type = pickEventType();
+  const def = EVENTS[type];
+  const L = els.events;
+  const w = L.clientWidth, h = L.clientHeight;
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = `event ev-${type}`;
+  el.textContent = def.emoji;
+  el.title = def.label;
+  el.setAttribute('aria-label', def.label);
+  L.appendChild(el);
+  state.event = { type, el, anim: null };
+
+  const c = rectIn(els.holder, L);
+  let anim;
+  switch (type) {
+    case 'mouse': {
+      const y = h - 54;
+      const goRight = Math.random() < 0.5;
+      const [x0, x1] = goRight ? [-60, w + 10] : [w + 10, -60];
+      const flip = goRight ? -1 : 1; // emoji faces left
+      el.style.top = `${y}px`;
+      anim = el.animate([
+        { transform: `translateX(${x0}px) scaleX(${flip})` },
+        { transform: `translateX(${(x0 + x1) / 2}px) translateY(-6px) scaleX(${flip})`, offset: 0.5 },
+        { transform: `translateX(${x1}px) scaleX(${flip})` },
+      ], { duration: 3400, easing: 'linear' });
+      say('!!! 🐁', 1200);
+      Sound.play('squeak');
+      break;
+    }
+    case 'butterfly': {
+      const yb = h * 0.18;
+      const frames = [];
+      for (let i = 0; i <= 8; i++) {
+        const x = -50 + (w + 100) * (i / 8);
+        const y = yb + Math.sin(i * 1.4) * h * 0.1;
+        frames.push({ transform: `translate(${x}px, ${y}px) rotate(${i % 2 ? 12 : -12}deg)` });
+      }
+      anim = el.animate(frames, { duration: 5200, easing: 'ease-in-out' });
+      say('Ooh, a butterfly!', 1400);
+      break;
+    }
+    case 'golden': {
+      const x = w * (0.15 + Math.random() * 0.7);
+      const yEnd = h * (0.35 + Math.random() * 0.3);
+      anim = el.animate([
+        { transform: `translate(${x}px, -60px) scale(.6)` },
+        { transform: `translate(${x}px, ${yEnd}px) scale(1.1)`, offset: 0.15 },
+        { transform: `translate(${x}px, ${yEnd}px) scale(1)`, offset: 0.2 },
+        { transform: `translate(${x}px, ${yEnd}px) scale(1.15)`, offset: 0.6 },
+        { transform: `translate(${x}px, ${yEnd}px) scale(1)`, opacity: 1, offset: 0.85 },
+        { transform: `translate(${x}px, ${yEnd}px) scale(.4)`, opacity: 0 },
+      ], { duration: 3600, easing: 'ease-out' });
+      say('✨ Shiny! ✨', 1200);
+      break;
+    }
+    case 'cucumber': {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const x = Math.max(10, Math.min(w - 70, c.x + c.w / 2 + side * (c.w * 0.55) - 30));
+      const y = c.y + c.h * 0.72;
+      anim = el.animate([
+        { transform: `translate(${x}px, ${y + 40}px) rotate(${side * 30}deg)`, opacity: 0 },
+        { transform: `translate(${x}px, ${y}px) rotate(${side * 30}deg)`, opacity: 1, offset: 0.04 },
+        { transform: `translate(${x}px, ${y}px) rotate(${side * 30}deg)`, opacity: 1, offset: 0.96 },
+        { transform: `translate(${x}px, ${y}px) rotate(${side * 30}deg)`, opacity: 0 },
+      ], { duration: 7000 });
+      state.scared = true;
+      els.holder.classList.add('scared');
+      react('scare');
+      say('AAAH!! 🥒', 2000);
+      Sound.play('scare');
+      break;
+    }
+  }
+  state.event.anim = anim;
+  anim.onfinish = () => {
+    if (type === 'cucumber' && state.running) say('*glares at cucumber*', 1400);
+    endEvent();
+  };
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    catchEvent();
+  });
+}
+
+function catchEvent() {
+  const ev = state.event;
+  if (!ev || !state.running) return;
+  const L = els.events;
+  const r = rectIn(ev.el, L);
+  const def = EVENTS[ev.type];
+  state.caught++;
+  endEvent();
+  floatTextAt(r.x + r.w / 2, r.y, `+${def.points}`, `ft-event ft-${ev.type}`);
+  sparkleAt(r.x + r.w / 2, r.y + r.h / 2);
+  switch (ev.type) {
+    case 'mouse': react('toy'); say('Got it!! 🐁', 1400); Sound.play('catch'); break;
+    case 'butterfly': react('toy'); say('Pounce! 🦋', 1400); Sound.play('catch'); break;
+    case 'golden': react('treat'); say('GOLDEN TREAT!! 🌟', 1600); Sound.play('granted'); burstHearts(8); break;
+    case 'cucumber': say('Phew… thank you!', 1600); Sound.play('pet'); break;
+  }
+  addHappiness(def.points);
+}
+
+function endEvent() {
+  const ev = state.event;
+  if (!ev) return;
+  ev.anim && (ev.anim.onfinish = null);
+  ev.anim && ev.anim.cancel();
+  ev.el.remove();
+  if (ev.type === 'cucumber') {
+    state.scared = false;
+    els.holder.classList.remove('scared');
+  }
+  state.event = null;
+  state.nextEventAt = state.elapsed + 5 + Math.random() * 5;
+}
+
+// ---------- Effects ----------
 function react(action) {
   const h = els.holder;
-  h.classList.remove('react-pet', 'react-toy', 'react-treat', 'react-catnip');
+  h.classList.remove('react-pet', 'react-toy', 'react-treat', 'react-catnip', 'react-scare');
   void h.offsetWidth;
   h.classList.add(`react-${action}`);
 }
 
-function stageRect() { return els.fx.getBoundingClientRect(); }
+function rectIn(el, container) {
+  const a = el.getBoundingClientRect();
+  const b = container.getBoundingClientRect();
+  return { x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height };
+}
 
 function throwItem(action, originEl) {
   if (action === 'pet') return;
-  const s = stageRect();
-  const o = originEl.getBoundingClientRect();
-  const c = els.holder.getBoundingClientRect();
+  const o = rectIn(originEl, els.fx);
+  const c = rectIn(els.holder, els.fx);
   const item = document.createElement('div');
   item.className = 'thrown';
   item.textContent = ACTIONS[action].emoji;
-  const x0 = o.left + o.width / 2 - s.left, y0 = o.top - s.top;
-  const x1 = c.left + c.width / 2 - s.left, y1 = c.top + c.height * 0.55 - s.top;
+  const x0 = o.x + o.w / 2, y0 = o.y;
+  const x1 = c.x + c.w / 2, y1 = c.y + c.h * 0.55;
   item.style.left = `${x0}px`;
   item.style.top = `${y0}px`;
   els.fx.appendChild(item);
@@ -471,23 +798,22 @@ function throwItem(action, originEl) {
   ], { duration: 550, easing: 'ease-in-out' }).onfinish = () => item.remove();
 }
 
-function floatText(text, action) {
-  const s = stageRect();
-  const c = els.holder.getBoundingClientRect();
+function floatTextAt(x, y, text, cls) {
   const el = document.createElement('div');
-  el.className = `float-text ft-${action}`;
+  el.className = `float-text ${cls}`;
   el.textContent = text;
-  el.style.left = `${c.left + c.width * (0.3 + Math.random() * 0.4) - s.left}px`;
-  el.style.top = `${c.top + c.height * 0.15 - s.top}px`;
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
   els.fx.appendChild(el);
   setTimeout(() => el.remove(), 1100);
 }
 
-function burstHearts(n) {
-  const s = stageRect();
-  const c = els.holder.getBoundingClientRect();
-  const cx = c.left + c.width / 2 - s.left, cy = c.top + c.height * 0.4 - s.top;
-  const icons = ['❤️', '💕', '💖', '✨'];
+function floatText(text, cls, yFrac = 0.15) {
+  const c = rectIn(els.holder, els.fx);
+  floatTextAt(c.x + c.w * (0.3 + Math.random() * 0.4), c.y + c.h * yFrac, text, cls);
+}
+
+function burstAt(cx, cy, n, icons) {
   for (let i = 0; i < n; i++) {
     const el = document.createElement('div');
     el.className = 'heart';
@@ -504,27 +830,51 @@ function burstHearts(n) {
   }
 }
 
+function burstHearts(n, icons = ['❤️', '💕', '💖', '✨']) {
+  const c = rectIn(els.holder, els.fx);
+  burstAt(c.x + c.w / 2, c.y + c.h * 0.4, n, icons);
+}
+
+function sparkleAt(x, y) { burstAt(x, y, 6, ['✨', '⭐']); }
+
 // ---------- Win ----------
 function win() {
-  state.running = false;
+  if (!state.running) return;
+  stopGame();
   const time = state.elapsed;
+  const cat = state.cat;
   const best = loadBest();
-  const prev = best[state.cat.id];
+  const prev = best[cat.id];
   const isRecord = !prev || time < prev;
-  if (isRecord) { best[state.cat.id] = time; saveBest(best); }
+  if (isRecord) { best[cat.id] = time; saveBest(best); }
+
+  const earned = starsFor(time, cat);
+  const starMap = loadStars();
+  const beforeTotal = totalStars();
+  const prevStars = starMap[cat.id] || 0;
+  if (earned > prevStars) { starMap[cat.id] = earned; saveStars(starMap); }
+  const afterTotal = totalStars();
+  const unlocked = HATS.filter((h) => h.stars > beforeTotal && h.stars <= afterTotal);
 
   Sound.play('win');
   els.holder.className = 'cat-holder mood-ecstatic react-win';
   say('PURRRRRR ♥', 4000);
-  els.winCat.innerHTML = catSVG(state.cat);
+  els.winCat.innerHTML = catSVG(cat, unlocked.length ? unlocked[unlocked.length - 1].id : selectedHat);
   els.winCat.className = 'win-cat mood-ecstatic';
-  els.winTitle.textContent = `${state.cat.name} is purr-fectly happy!`;
+  els.winTitle.textContent = `${cat.name} is purr-fectly happy!`;
+  els.winStars.innerHTML = [0, 1, 2].map((i) => `<span class="${i < earned ? 'on' : ''}" style="animation-delay:${0.9 + i * 0.25}s">★</span>`).join('');
+  const t = starThresholds(cat);
   const c = state.counts;
-  els.winStats.innerHTML = `You did it in <b>${time.toFixed(1)}s</b> with
-    ${c.pet} pets, ${c.toy} toy throws, ${c.treat} treats and ${c.catnip} catnip sprinkles.`;
+  els.winStats.innerHTML = `You did it in <b>${time.toFixed(1)}s</b>
+    ${earned < 3 ? `<span class="hint">(★★★ under ${t.three.toFixed(0)}s)</span>` : ''}<br>
+    ${c.pet} pets · ${c.toy} toys · ${c.treat} treats · ${c.catnip} catnip<br>
+    ✨ ${state.wishesGranted} wishes granted · 🔥 best combo ×${state.bestCombo} · 🐁 ${state.caught} surprises`;
   els.winBest.textContent = isRecord
     ? (prev ? `🏆 New best time! (was ${prev.toFixed(1)}s)` : '🏆 First win with this cat!')
     : `Best time: ${prev.toFixed(1)}s`;
+  els.winUnlock.innerHTML = unlocked.length
+    ? `🎁 New hat unlocked: ${unlocked.map((h) => `${h.emoji} ${h.name}`).join(', ')}! <br><small>Put it on from the Dress-up row.</small>`
+    : '';
   setTimeout(() => {
     els.win.classList.add('show');
     makeConfetti();
@@ -549,8 +899,31 @@ function makeConfetti() {
 // ---------- Wiring ----------
 els.start.addEventListener('click', startGame);
 els.actions.forEach((btn) => btn.addEventListener('click', () => doAction(btn.dataset.action, btn)));
-els.holder.addEventListener('click', () => doAction('pet', null));
-$('#back-btn').addEventListener('click', () => { state.running = false; buildSelect(); showScreen('select'); });
+
+// Click the cat to pet it, or stroke it by dragging across it.
+const stroke = { active: false, x: 0, y: 0, dist: 0, moved: false };
+els.holder.addEventListener('pointerdown', (e) => {
+  Object.assign(stroke, { active: true, x: e.clientX, y: e.clientY, dist: 0, moved: false });
+  try { els.holder.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+});
+els.holder.addEventListener('pointermove', (e) => {
+  if (!stroke.active) return;
+  stroke.dist += Math.hypot(e.clientX - stroke.x, e.clientY - stroke.y);
+  stroke.x = e.clientX; stroke.y = e.clientY;
+  if (stroke.dist > 70) {
+    stroke.dist = 0;
+    stroke.moved = true;
+    doAction('pet', null, { quiet: true });
+  }
+});
+const endStroke = () => {
+  if (stroke.active && !stroke.moved) doAction('pet', null);
+  stroke.active = false;
+};
+els.holder.addEventListener('pointerup', endStroke);
+els.holder.addEventListener('pointercancel', () => { stroke.active = false; });
+
+$('#back-btn').addEventListener('click', () => { stopGame(); buildSelect(); showScreen('select'); });
 $('#again-btn').addEventListener('click', startGame);
 $('#choose-btn').addEventListener('click', () => { els.win.classList.remove('show'); buildSelect(); showScreen('select'); });
 els.sound.addEventListener('click', () => {

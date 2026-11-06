@@ -16,8 +16,20 @@ A cozy browser game: choose a cat, then spoil them with pets, toys, treats and c
    | 🌿 Catnip | +9 | 5s |
 
    Keyboard shortcuts: `1` pet, `2` toy, `3` treat, `4` catnip.
+   Click the cat to pet it, or **stroke it** by dragging across it.
 4. Happiness slowly fades, and fades faster the happier the cat is. Doing the same thing over and over gets boring (each repeat is worth less), so mix it up!
-5. Fill the bar to 100% to win. Your best time for each cat is saved in your browser.
+5. Fill the bar to 100% to win.
+
+## Extra fun
+
+- **Wishes 💭:** every few seconds the cat wishes for something. Give it within 5 seconds for **double points**; if you miss it, the cat sulks (−4).
+- **Combos 🔥:** do *different* actions quickly one after another. A combo of ×3 gives +1 bonus point per action, and ×6 gives +2.
+- **Surprises:** click them before they're gone!
+  - 🐁 a toy mouse scurries across the floor (+8)
+  - 🦋 a butterfly flutters by (+6)
+  - 🌟 a golden treat falls from the sky (+15)
+  - 🥒 a **scary cucumber** appears! The cat panics and loses happiness until you click the cucumber away.
+- **Stars & hats ⭐:** each win earns 1–3 stars depending on your time. Stars unlock hats in the **Dress-up** row (🎀 bow, 🌸 flower, 🧢 cap, 👑 crown, 🎩 top hat, 🎓 grad cap). Stars, best times and your chosen hat are saved in your browser.
 
 ## Files
 
