@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Happy Kitty</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ============ CHOOSE YOUR CAT ============ -->
+  <section id="select-screen" class="screen active">
+    <header class="select-header">
+      <h1>Happy Kitty</h1>
+      <p>Choose your cat, then spoil them with pets, toys, treats and catnip until they're purr-fectly happy!</p>
+    </header>
+    <div id="cat-grid" class="cat-grid" role="list"></div>
+    <div class="select-footer">
+      <div id="cat-details" class="cat-details" aria-live="polite"></div>
+      <button id="start-btn" class="big-btn" disabled>Pick a cat</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="game-screen" class="screen">
+    <div class="room" aria-hidden="true">
+      <svg class="room-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
+        <!-- wall -->
+        <rect width="1000" height="420" fill="#f6e3c5"/>
+        <rect x="0" y="0" width="470" height="420" fill="#cfe8df"/>
+        <g fill="#c0ddd2"><rect x="0" y="0" width="470" height="420" fill="url(#tiles)"/></g>
+        <defs>
+          <pattern id="tiles" width="40" height="40" patternUnits="userSpaceOnUse">
+            <rect width="40" height="40" fill="#d8eee6"/>
+            <rect width="38" height="38" x="1" y="1" fill="#e4f4ee"/>
+          </pattern>
+          <pattern id="boards" width="120" height="30" patternUnits="userSpaceOnUse">
+            <rect width="120" height="30" fill="#c58b52"/>
+            <rect width="118" height="28" x="1" y="1" fill="#cf9760"/>
+            <line x1="60" y1="0" x2="60" y2="30" stroke="#b47a44" stroke-width="2"/>
+          </pattern>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8fd3ff"/>
+            <stop offset="1" stop-color="#d9f1ff"/>
+          </linearGradient>
+        </defs>
+        <!-- wallpaper stripes, living room side -->
+        <g fill="#f1d7b0">
+          <rect x="500" y="0" width="22" height="420"/><rect x="560" y="0" width="22" height="420"/>
+          <rect x="620" y="0" width="22" height="420"/><rect x="680" y="0" width="22" height="420"/>
+          <rect x="740" y="0" width="22" height="420"/><rect x="800" y="0" width="22" height="420"/>
+          <rect x="860" y="0" width="22" height="420"/><rect x="920" y="0" width="22" height="420"/>
+          <rect x="980" y="0" width="22" height="420"/>
+        </g>
+        <!-- divider pillar -->
+        <rect x="465" y="0" width="20" height="420" fill="#e8cfa6"/>
+
+        <!-- KITCHEN: window -->
+        <rect x="150" y="50" width="170" height="130" rx="6" fill="#fff"/>
+        <rect x="160" y="60" width="150" height="110" fill="url(#sky)"/>
+        <circle cx="280" cy="90" r="16" fill="#ffe27a"/>
+        <ellipse cx="200" cy="100" rx="24" ry="10" fill="#fff" opacity=".9"/>
+        <rect x="232" y="60" width="6" height="110" fill="#fff"/>
+        <rect x="160" y="112" width="150" height="6" fill="#fff"/>
+        <path d="M145 45 Q190 120 160 185 L140 185 Z" fill="#f58f8f"/>
+        <path d="M325 45 Q280 120 310 185 L330 185 Z" fill="#f58f8f"/>
+        <!-- upper cabinets -->
+        <rect x="20" y="30" width="110" height="120" rx="6" fill="#8fbfae"/>
+        <rect x="30" y="40" width="42" height="100" rx="4" fill="#9ccbba"/>
+        <rect x="78" y="40" width="42" height="100" rx="4" fill="#9ccbba"/>
+        <circle cx="66" cy="120" r="4" fill="#f6e3c5"/><circle cx="84" cy="120" r="4" fill="#f6e3c5"/>
+        <!-- hanging pans -->
+        <line x1="355" y1="40" x2="440" y2="40" stroke="#7a6a5a" stroke-width="5" stroke-linecap="round"/>
+        <line x1="375" y1="40" x2="375" y2="62" stroke="#7a6a5a" stroke-width="3"/>
+        <circle cx="375" cy="85" r="24" fill="#5b5b66"/><circle cx="375" cy="85" r="17" fill="#6f6f7b"/>
+        <line x1="420" y1="40" x2="420" y2="58" stroke="#7a6a5a" stroke-width="3"/>
+        <rect x="414" y="58" width="12" height="40" rx="5" fill="#d08a4a"/>
+        <ellipse cx="420" cy="104" rx="16" ry="12" fill="#d08a4a"/>
+        <!-- counter + lower cabinets -->
+        <rect x="0" y="250" width="470" height="20" fill="#f2f2f2"/>
+        <rect x="0" y="268" width="470" height="152" fill="#7fb3a1"/>
+        <rect x="15" y="282" width="100" height="125" rx="5" fill="#8fbfae"/>
+        <rect x="125" y="282" width="100" height="125" rx="5" fill="#8fbfae"/>
+        <rect x="235" y="282" width="100" height="125" rx="5" fill="#8fbfae"/>
+        <rect x="345" y="282" width="110" height="125" rx="5" fill="#8fbfae"/>
+        <g fill="#f6e3c5"><rect x="95" y="300" width="6" height="26" rx="3"/><rect x="140" y="300" width="6" height="26" rx="3"/><rect x="315" y="300" width="6" height="26" rx="3"/><rect x="360" y="300" width="6" height="26" rx="3"/></g>
+        <!-- counter items: jar of treats, kettle, fruit bowl -->
+        <rect x="40" y="200" width="44" height="52" rx="8" fill="#d9f0ff" stroke="#9cc" stroke-width="2"/>
+        <rect x="36" y="192" width="52" height="12" rx="4" fill="#e07a5f"/>
+        <text x="62" y="236" font-size="18" text-anchor="middle">🐟</text>
+        <path d="M160 250 Q150 205 185 200 Q220 205 210 250 Z" fill="#e07a5f"/>
+        <rect x="178" y="190" width="14" height="10" rx="3" fill="#333"/>
+        <path d="M210 215 Q232 210 226 232" stroke="#e07a5f" stroke-width="6" fill="none"/>
+        <ellipse cx="380" cy="246" rx="44" ry="10" fill="#f4c27a"/>
+        <circle cx="362" cy="232" r="12" fill="#ef5350"/><circle cx="384" cy="228" r="13" fill="#ffca28"/><circle cx="402" cy="234" r="11" fill="#7cb342"/>
+
+        <!-- LIVING ROOM: picture frame -->
+        <rect x="560" y="70" width="130" height="95" rx="4" fill="#a0673a"/>
+        <rect x="570" y="80" width="110" height="75" fill="#bfe3b0"/>
+        <path d="M570 155 L610 110 L640 140 L655 125 L680 155 Z" fill="#6aa86a"/>
+        <circle cx="655" cy="98" r="9" fill="#fff4a8"/>
+        <!-- shelf with plant -->
+        <rect x="770" y="140" width="160" height="10" rx="3" fill="#a0673a"/>
+        <rect x="790" y="110" width="30" height="30" rx="4" fill="#e07a5f"/>
+        <path d="M805 110 Q785 80 795 65 M805 110 Q805 75 812 58 M805 110 Q825 82 830 70" stroke="#4f9a5a" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <rect x="850" y="104" width="14" height="36" fill="#7d8de0"/><rect x="866" y="98" width="14" height="42" fill="#f2b84b"/><rect x="882" y="108" width="12" height="32" fill="#e57373"/>
+        <!-- floor lamp -->
+        <line x1="950" y1="140" x2="950" y2="400" stroke="#555" stroke-width="6"/>
+        <path d="M915 140 L985 140 L970 90 L930 90 Z" fill="#ffe7a3"/>
+        <ellipse cx="950" cy="402" rx="26" ry="6" fill="#555"/>
+        <!-- couch -->
+        <rect x="560" y="250" width="360" height="90" rx="30" fill="#6c7fd8"/>
+        <rect x="575" y="300" width="330" height="70" rx="18" fill="#7f91e6"/>
+        <rect x="540" y="280" width="50" height="110" rx="22" fill="#5e70c9"/>
+        <rect x="890" y="280" width="50" height="110" rx="22" fill="#5e70c9"/>
+        <rect x="600" y="270" width="70" height="50" rx="14" fill="#f2b84b" transform="rotate(-8 635 295)"/>
+        <rect x="560" y="388" width="14" height="20" fill="#4a3a2a"/><rect x="906" y="388" width="14" height="20" fill="#4a3a2a"/>
+
+        <!-- floor -->
+        <rect x="0" y="420" width="1000" height="180" fill="url(#boards)"/>
+        <rect x="0" y="414" width="1000" height="10" fill="#e8cfa6"/>
+        <!-- rug -->
+        <ellipse cx="500" cy="520" rx="300" ry="62" fill="#e57373"/>
+        <ellipse cx="500" cy="520" rx="270" ry="50" fill="#f28b82"/>
+        <ellipse cx="500" cy="520" rx="230" ry="38" fill="none" stroke="#fff3" stroke-width="8" stroke-dasharray="20 12"/>
+        <!-- food & water bowls -->
+        <ellipse cx="250" cy="515" rx="40" ry="12" fill="#3f88c5"/>
+        <path d="M210 505 Q250 545 290 505 Z" fill="#3f88c5"/>
+        <ellipse cx="250" cy="506" rx="34" ry="8" fill="#8b5a2b"/>
+        <ellipse cx="760" cy="515" rx="40" ry="12" fill="#e07a5f"/>
+        <path d="M720 505 Q760 545 800 505 Z" fill="#e07a5f"/>
+        <ellipse cx="760" cy="506" rx="34" ry="8" fill="#a6dcf5"/>
+      </svg>
+    </div>
+
+    <div class="hud">
+      <button id="back-btn" class="icon-btn" title="Choose another cat" aria-label="Choose another cat">⟵</button>
+      <div class="meter-wrap">
+        <div class="meter-label">
+          <span id="hud-name">Happiness</span>
+          <span id="hud-mood" class="mood-word">Grumpy</span>
+        </div>
+        <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter">
+          <div id="meter-fill" class="meter-fill"></div>
+          <span id="meter-text" class="meter-text">0%</span>
+        </div>
+      </div>
+      <div class="hud-right">
+        <div class="timer" title="Time">⏱ <span id="timer">0.0</span>s</div>
+        <button id="sound-btn" class="icon-btn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div id="bubble" class="bubble">Meow?</div>
+      <div id="cat-holder" class="cat-holder" title="Click to pet!"></div>
+      <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
+    </div>
+
+    <div class="actions" id="actions">
+      <button class="action-btn" data-action="pet"><span class="emoji">✋</span><span class="label">Pet</span><span class="pts"></span><span class="cd"></span></button>
+      <button class="action-btn" data-action="toy"><span class="emoji">🧶</span><span class="label">Toy</span><span class="pts"></span><span class="cd"></span></button>
+      <button class="action-btn" data-action="treat"><span class="emoji">🐟</span><span class="label">Treat</span><span class="pts"></span><span class="cd"></span></button>
+      <button class="action-btn" data-action="catnip"><span class="emoji">🌿</span><span class="label">Catnip</span><span class="pts"></span><span class="cd"></span></button>
+    </div>
+  </section>
+
+  <!-- ============ WIN ============ -->
+  <div id="win-overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="win-title">
+    <div class="win-card">
+      <div id="win-cat" class="win-cat"></div>
+      <h2 id="win-title">Purr-fectly happy!</h2>
+      <p id="win-stats"></p>
+      <p id="win-best" class="best"></p>
+      <div class="win-buttons">
+        <button id="again-btn" class="big-btn">Play again</button>
+        <button id="choose-btn" class="big-btn secondary">Choose another cat</button>
+      </div>
+    </div>
+    <div id="confetti" class="confetti"></div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
