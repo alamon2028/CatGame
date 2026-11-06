@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Happy Kitty</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ============ CHOOSE YOUR CAT ============ -->
+  <section id="select-screen" class="screen active">
+    <header class="select-header">
+      <h1>Happy Kitty</h1>
+      <p>Choose your cat, then spoil them with pets, toys, treats and catnip until they're purr-fectly happy!</p>
+    </header>
+    <div id="cat-grid" class="cat-grid" role="list"></div>
+    <h2 class="secret-title">✨ Secret cats <span id="secret-count" class="secret-count"></span></h2>
+    <div id="secret-grid" class="cat-grid secret-grid" role="list"></div>
+    <div class="select-footer">
+      <div class="hat-picker room-picker">
+        <div class="hat-title">Room</div>
+        <div id="room-row" class="room-row" role="radiogroup" aria-label="Choose a room"></div>
+      </div>
+      <div class="hat-picker">
+        <div class="hat-title">Dress-up <span id="star-total" class="star-total"></span></div>
+        <div id="hat-row" class="hat-row" role="radiogroup" aria-label="Choose a hat"></div>
+      </div>
+      <div id="cat-details" class="cat-details" aria-live="polite"></div>
+      <button id="start-btn" class="big-btn" disabled>Pick a cat</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="game-screen" class="screen">
+    <div id="room" class="room" aria-hidden="true"></div>
+
+    <div class="hud">
+      <button id="back-btn" class="icon-btn" title="Choose another cat" aria-label="Choose another cat">⟵</button>
+      <div class="meter-wrap">
+        <div class="meter-label">
+          <span id="hud-name">Happiness</span>
+          <span id="hud-mood" class="mood-word">Grumpy</span>
+        </div>
+        <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter">
+          <div id="meter-fill" class="meter-fill"></div>
+          <span id="meter-text" class="meter-text">0%</span>
+        </div>
+      </div>
+      <div class="hud-right">
+        <div class="timer" title="Time">⏱ <span id="timer">0.0</span>s</div>
+        <button id="sound-btn" class="icon-btn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div id="bubble" class="bubble">Meow?</div>
+      <div id="wish" class="wish" aria-live="polite"><div class="wish-ring"><span class="wish-icon"></span></div><span class="wish-label">I want…</span></div>
+      <div id="combo" class="combo" aria-live="polite"></div>
+      <div id="cat-holder" class="cat-holder" title="Click to pet!"></div>
+      <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
+      <div id="events-layer" class="events-layer"></div>
+    </div>
+
+    <div class="actions" id="actions">
+      <button class="action-btn" data-action="pet"><span class="emoji">✋</span><span class="label">Pet</span><span class="pts"></span><span class="cd"></span></button>
+      <button class="action-btn" data-action="toy"><span class="emoji">🧶</span><span class="label">Toy</span><span class="pts"></span><span class="cd"></span></button>
+      <button class="action-btn" data-action="treat"><span class="emoji">🐟</span><span class="label">Treat</span><span class="pts"></span><span class="cd"></span></button>
+      <button class="action-btn" data-action="catnip"><span class="emoji">🌿</span><span class="label">Catnip</span><span class="pts"></span><span class="cd"></span></button>
+    </div>
+  </section>
+
+  <!-- ============ WIN ============ -->
+  <div id="win-overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="win-title">
+    <div class="win-card">
+      <div id="win-cat" class="win-cat"></div>
+      <h2 id="win-title">Purr-fectly happy!</h2>
+      <div id="win-stars" class="win-stars"></div>
+      <p id="win-stats"></p>
+      <p id="win-best" class="best"></p>
+      <p id="win-unlock" class="unlock"></p>
+      <div class="win-buttons">
+        <button id="again-btn" class="big-btn">Play again</button>
+        <button id="choose-btn" class="big-btn secondary">Choose another cat</button>
+      </div>
+    </div>
+    <div id="confetti" class="confetti"></div>
+  </div>
+
+  <script src="rooms.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
