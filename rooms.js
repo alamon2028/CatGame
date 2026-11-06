@@ -15,9 +15,9 @@
 const ROOMS = [
   {
     id: 'living',
-    name: 'Living Room',
+    name: 'Living Room & Kitchen',
     emoji: '🛋️',
-    blurb: 'A sunny, cozy living room with a big comfy rug.',
+    blurb: 'A sunny living room with a kitchen corner and a big comfy rug.',
     bg: '#cf9760',
   },
   {
@@ -90,19 +90,27 @@ function livingRoom(u) {
     <radialGradient id="${u}lamp" cx=".5" cy="0" r="1">
       <stop offset="0" stop-color="#fff3c4" stop-opacity=".75"/><stop offset="1" stop-color="#fff3c4" stop-opacity="0"/>
     </radialGradient>
+    <pattern id="${u}tiles" width="48" height="48" patternUnits="userSpaceOnUse">
+      <rect width="48" height="48" fill="#cdeee0"/><rect x="2" y="2" width="44" height="44" rx="6" fill="#dff5eb"/>
+    </pattern>
   </defs>
   <rect width="1600" height="1000" fill="#f8e6cf"/>
   <rect width="1600" height="680" fill="url(#${u}dots)"/>
 
+  <!-- kitchen corner: tiled wall and a cream pillar dividing it from the living room -->
+  <rect x="1000" width="600" height="680" fill="url(#${u}tiles)"/>
+  <rect x="984" width="26" height="680" fill="#fffaf3"/>
+  <rect x="980" y="0" width="34" height="18" fill="#f1e2d0"/>
+
   ${windowFrame(u, 250, 150, 300, 270, '#f4a3b8')}
 
   <!-- picture frames -->
-  <g transform="translate(1060 170)">
+  <g transform="translate(26 200)">
     <rect width="150" height="112" rx="8" fill="#fff" stroke="#c99b6d" stroke-width="8"/>
     <path d="M40 56 Q72 28 104 56 Q72 84 40 56Z" fill="#7ec4e8"/><path d="M102 56 L126 40 L126 72Z" fill="#7ec4e8"/>
     <circle cx="56" cy="51" r="5" fill="#335"/>
   </g>
-  <g transform="translate(1250 210)">
+  <g transform="translate(626 200)">
     <rect width="96" height="120" rx="8" fill="#fff" stroke="#e88aa8" stroke-width="8"/>
     <path d="M48 92 C20 70 26 40 48 56 C70 40 76 70 48 92Z" fill="#ff8fb1"/>
   </g>
@@ -117,15 +125,57 @@ function livingRoom(u) {
   </g>
   <circle cx="820" cy="134" r="8" fill="#8a7066"/>
 
-  <!-- bookshelf -->
-  <g transform="translate(1180 380)">
-    <rect width="260" height="300" rx="8" fill="#c08b5c"/>
-    <rect x="14" y="14" width="232" height="128" fill="#a77448"/><rect x="14" y="158" width="232" height="128" fill="#a77448"/>
-    <rect x="28" y="54" width="22" height="88" fill="#e8574f"/><rect x="54" y="40" width="20" height="102" fill="#6aa5e0"/>
-    <rect x="78" y="62" width="26" height="80" fill="#f6c244"/><rect x="108" y="48" width="18" height="94" fill="#8cc152"/>
-    <rect x="146" y="70" width="80" height="72" rx="10" fill="#f4a3b8"/>
-    <rect x="28" y="196" width="24" height="90" fill="#b388ff"/><rect x="56" y="210" width="20" height="76" fill="#ff9f43"/>
-    <circle cx="170" cy="250" r="30" fill="#c48be6"/><path d="M150 236 Q170 254 190 232 M146 254 Q170 270 194 250" stroke="#a46bc6" stroke-width="4" fill="none"/>
+  <!-- kitchen: upper cabinets -->
+  <g transform="translate(1036 100)">
+    <rect width="250" height="190" rx="14" fill="#8fc9b3"/>
+    <rect x="12" y="12" width="107" height="166" rx="10" fill="#a6d8c4"/><rect x="131" y="12" width="107" height="166" rx="10" fill="#a6d8c4"/>
+    <circle cx="104" cy="150" r="7" fill="#fffaf3"/><circle cx="146" cy="150" r="7" fill="#fffaf3"/>
+  </g>
+
+  <!-- kitchen: hanging pans -->
+  <rect x="1310" y="110" width="124" height="10" rx="5" fill="#a77448"/>
+  <line x1="1336" y1="120" x2="1336" y2="150" stroke="#8a7066" stroke-width="3"/>
+  <circle cx="1336" cy="182" r="32" fill="#7a7486"/><circle cx="1336" cy="182" r="23" fill="#918ba0"/>
+  <line x1="1404" y1="120" x2="1404" y2="146" stroke="#8a7066" stroke-width="3"/>
+  <rect x="1396" y="146" width="16" height="50" rx="7" fill="#e0895a"/><ellipse cx="1404" cy="214" rx="22" ry="18" fill="#e0895a"/>
+
+  <!-- kitchen: fridge -->
+  <g transform="translate(1452 220)">
+    <rect width="150" height="462" rx="26" fill="#bfe0f5"/>
+    <rect x="0" y="160" width="150" height="8" fill="#9fcbe8"/>
+    <rect x="18" y="60" width="10" height="70" rx="5" fill="#fffaf3"/><rect x="18" y="200" width="10" height="90" rx="5" fill="#fffaf3"/>
+    <path d="M70 60 Q90 44 110 60 Q90 76 70 60Z" fill="#ff8fb1"/><path d="M108 60 L120 52 L120 68Z" fill="#ff8fb1"/>
+    <path d="M90 236 C76 224 80 208 90 216 C100 208 104 224 90 236Z" fill="#f6b73c"/>
+    <rect x="62" y="280" width="54" height="40" rx="4" fill="#fffaf3" transform="rotate(-6 89 300)"/>
+    <path d="M72 304 L84 292 L94 302 L106 290" stroke="#5aa95f" stroke-width="3" fill="none" transform="rotate(-6 89 300)"/>
+  </g>
+
+  <!-- kitchen: counter and lower cabinets -->
+  <g transform="translate(1018 470)">
+    <rect x="0" y="0" width="430" height="212" rx="8" fill="#8fc9b3"/>
+    <rect x="12" y="34" width="128" height="164" rx="10" fill="#a6d8c4"/>
+    <rect x="151" y="34" width="128" height="164" rx="10" fill="#a6d8c4"/>
+    <rect x="290" y="34" width="128" height="164" rx="10" fill="#a6d8c4"/>
+    <rect x="110" y="56" width="10" height="38" rx="5" fill="#fffaf3"/><rect x="171" y="56" width="10" height="38" rx="5" fill="#fffaf3"/>
+    <rect x="388" y="56" width="10" height="38" rx="5" fill="#fffaf3"/>
+    <rect x="-10" y="-8" width="450" height="30" rx="10" fill="#fffaf3"/>
+  </g>
+
+  <!-- kitchen: treat jar, kettle, fruit bowl -->
+  <g transform="translate(1078 392)">
+    <rect x="-34" y="0" width="68" height="72" rx="14" fill="#e3f3fc" stroke="#9fcbe8" stroke-width="3"/>
+    <rect x="-40" y="-12" width="80" height="18" rx="7" fill="#f2708f"/>
+    <path d="M-16 38 Q0 22 16 38 Q0 54 -16 38Z" fill="#f6b73c"/><path d="M14 38 L24 30 L24 46Z" fill="#f6b73c"/>
+  </g>
+  <g transform="translate(1210 404)">
+    <path d="M-40 60 Q-50 4 0 0 Q50 4 40 60Z" fill="#f4a3b8"/>
+    <rect x="-10" y="-14" width="20" height="16" rx="5" fill="#8a7066"/>
+    <path d="M38 22 Q66 18 58 46" stroke="#f4a3b8" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M-36 20 Q-60 22 -54 44" stroke="#e88aa8" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(1366 446)">
+    <circle cx="-22" cy="-12" r="18" fill="#e8574f"/><circle cx="4" cy="-20" r="19" fill="#f6c244"/><circle cx="26" cy="-10" r="16" fill="#8cc152"/>
+    <path d="M-58 -2 L58 -2 Q52 22 0 22 Q-52 22 -58 -2Z" fill="#c08b5c"/>
   </g>
 
   <!-- floor -->

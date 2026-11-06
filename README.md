@@ -37,7 +37,7 @@ Pick where to play from the **Room** row on the choose-your-cat screen. New room
 
 | Room | What's there | How to unlock |
 |------|--------------|---------------|
-| 🛋️ Living Room | A sunny living room with a couch, bookshelf, swinging pendant lamp and a big comfy rug. The toy mouse 🐁 visits. | Open from the start |
+| 🛋️ Living Room & Kitchen | A sunny living room (couch, window, plant, swinging pendant lamp, big comfy rug) with a kitchen corner: mint tiles, cabinets, hanging pans, a fridge, and a counter with a treat jar, kettle and fruit bowl. The toy mouse 🐁 visits. | Open from the start |
 | 🛏️ Cozy Bedroom | A tall cat tree with a condo, a smaller cat tree with a dangling pompom, zig-zag wall steps over the bed, two crinkle tunnels, fairy lights, a starry night window, a swinging star mobile and a cat-bed basket. A feather wand 🪶 pops out to play. | Win 3 games |
 | 🌻 Sunny Catio | A screened-in patio with a cat tree, a hanging plant, sunflowers and a garden view. Birds 🐦 come to visit. | Collect 8 stars |
 
