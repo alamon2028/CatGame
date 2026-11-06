@@ -24,7 +24,7 @@ const ROOMS = [
     id: 'bedroom',
     name: 'Cozy Bedroom',
     emoji: '🛏️',
-    blurb: 'Twinkly lights, a fluffy bed and a feather wand to swat.',
+    blurb: 'Cat trees, crinkle tunnels, twinkly lights and a feather wand to swat.',
     bg: '#7a6a9a',
     unlock: { hint: 'Win 3 games', progress: (x) => [x.wins, 3] },
   },
@@ -168,6 +168,29 @@ function livingRoom(u) {
 
 /* ---------- Bedroom ---------- */
 
+// A crinkle tunnel lying on the floor, with an opening on one end.
+function crinkleTunnel(x, y, w, h, color, ring, openLeft) {
+  let rings = '';
+  for (let rx = x + 30; rx < x + w - 24; rx += 34) {
+    rings += `<path d="M${rx} ${y + 6} Q${rx + 10} ${y + h / 2} ${rx} ${y + h - 6}" stroke="${ring}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  }
+  const ox = openLeft ? x + 8 : x + w - 8;
+  return `<g>
+    <ellipse cx="${x + w / 2}" cy="${y + h + 8}" rx="${w / 2 + 10}" ry="12" fill="#4a2f45" opacity=".15"/>
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}" fill="${color}"/>
+    <rect x="${x + 16}" y="${y + 10}" width="${w - 32}" height="${h * 0.18}" rx="${h * 0.09}" fill="#fff" opacity=".25"/>
+    ${rings}
+    <ellipse cx="${ox}" cy="${y + h / 2}" rx="${h * 0.34}" ry="${h / 2}" fill="${color}" stroke="${ring}" stroke-width="5"/>
+    <ellipse cx="${ox}" cy="${y + h / 2}" rx="${h * 0.23}" ry="${h * 0.38}" fill="#3a2a4f"/>
+  </g>`;
+}
+
+// A carpeted cat-tree platform with a soft cushion on top.
+function perch(cx, y, w, cushion) {
+  return `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="26" rx="13" fill="#8a6fb0"/>
+    <ellipse cx="${cx}" cy="${y + 2}" rx="${w / 2 - 8}" ry="11" fill="${cushion}"/>`;
+}
+
 function bedroom(u) {
   const bulbs = [];
   for (let i = 0; i <= 14; i++) {
@@ -187,6 +210,9 @@ function bedroom(u) {
     <radialGradient id="${u}lamp" cx=".5" cy=".5" r=".5">
       <stop offset="0" stop-color="#ffe9a8" stop-opacity=".8"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/>
     </radialGradient>
+    <pattern id="${u}sisal" width="16" height="10" patternUnits="userSpaceOnUse">
+      <rect width="16" height="10" fill="#ead6b4"/><rect width="16" height="4" fill="#d6bb91"/>
+    </pattern>
   </defs>
   <rect width="1600" height="1000" fill="url(#${u}stripes)"/>
 
@@ -221,6 +247,14 @@ function bedroom(u) {
     <path d="M820 246 l7 15 16 2 -12 11 3 16 -14 -8 -14 8 3 -16 -12 -11 16 -2Z" fill="#ff8fb1"/>
   </g>
 
+  <!-- wall-mounted cat steps above the bed -->
+  <g>
+    ${[[190, 330, '#ff9ec4'], [330, 262, '#8fd3ff'], [470, 330, '#ffd43b']].map(([cx, y, c]) => `
+      <path d="M${cx - 44} ${y + 22} L${cx - 44} ${y + 50} L${cx - 14} ${y + 22} M${cx + 44} ${y + 22} L${cx + 44} ${y + 50} L${cx + 14} ${y + 22}" stroke="#7a62a0" stroke-width="7" fill="none" stroke-linejoin="round"/>
+      <rect x="${cx - 66}" y="${y}" width="132" height="24" rx="10" fill="#8a6fb0"/>
+      <rect x="${cx - 58}" y="${y - 10}" width="116" height="14" rx="7" fill="${c}"/>`).join('')}
+  </g>
+
   <!-- bed -->
   <g transform="translate(40 400)">
     <rect x="0" y="0" width="70" height="300" rx="20" fill="#8a6fb0"/>
@@ -249,10 +283,39 @@ function bedroom(u) {
   </g>
   <rect y="672" width="1600" height="16" fill="#e9e1f6"/>
 
+  <!-- tall cat tree with a condo (right wall) -->
+  <g>
+    <rect x="1438" y="676" width="160" height="26" rx="10" fill="#6b5a86"/>
+    <rect x="1462" y="200" width="30" height="480" fill="url(#${u}sisal)"/>
+    <rect x="1548" y="430" width="28" height="250" fill="url(#${u}sisal)"/>
+    <rect x="1440" y="470" width="150" height="120" rx="22" fill="#9b87cf"/>
+    <ellipse cx="1515" cy="534" rx="36" ry="38" fill="#3a2a4f"/>
+    ${perch(1515, 456, 176, '#ff9ec4')}
+    ${perch(1477, 300, 140, '#8fd3ff')}
+    ${perch(1500, 190, 170, '#ffd43b')}
+    <line x1="1440" y1="312" x2="1440" y2="390" stroke="#fff" stroke-width="3"/>
+    <circle cx="1440" cy="400" r="14" fill="#ff8fb1"/><circle cx="1436" cy="396" r="5" fill="#fff" opacity=".5"/>
+  </g>
+
+  <!-- small cat tree beside the rug, with a dangling pompom -->
+  <g>
+    <rect x="1000" y="680" width="130" height="22" rx="9" fill="#6b5a86"/>
+    <rect x="1050" y="450" width="28" height="232" fill="url(#${u}sisal)"/>
+    ${perch(1064, 560, 120, '#b6f09c')}
+    ${perch(1064, 438, 150, '#ff9ec4')}
+    <line x1="1000" y1="450" x2="1000" y2="520" stroke="#fff" stroke-width="3"/>
+    <circle cx="1000" cy="530" r="13" fill="#ffd43b"/><circle cx="996" cy="526" r="4" fill="#fff" opacity=".5"/>
+  </g>
+
+  <!-- crinkle tunnels -->
+  ${crinkleTunnel(965, 716, 460, 92, '#8fd3ff', '#5fb3e6', true)}
+
   <!-- fluffy round rug -->
   <ellipse cx="800" cy="905" rx="420" ry="88" fill="#fff"/>
   <ellipse cx="800" cy="905" rx="420" ry="88" fill="none" stroke="#f4eefc" stroke-width="18" stroke-dasharray="4 14"/>
   <ellipse cx="800" cy="905" rx="300" ry="58" fill="#f6eefc"/>
+
+  ${crinkleTunnel(-20, 760, 430, 100, '#ff9ec4', '#e9789f', false)}
 
   <!-- cat bed basket -->
   <g transform="translate(1390 860)">
