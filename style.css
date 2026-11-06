@@ -81,6 +81,38 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .card-stars { color: #e6dbe0; font-size: 1.05rem; letter-spacing: 2px; margin-top: 4px; }
 .card-stars .on { color: var(--gold); text-shadow: 0 1px 0 #e0a800; }
 
+.secret-title {
+  width: 100%; max-width: 900px;
+  display: flex; align-items: center; gap: 10px;
+  margin: 22px 0 10px;
+  font-size: 1.3rem;
+  color: #6b52b5;
+}
+.secret-count { margin-left: auto; font-size: .9rem; color: var(--muted); font-weight: 400; }
+.cat-card.secret { background: linear-gradient(160deg, #fff 60%, #f3edff); }
+.cat-card.locked { background: #f4f0f8; box-shadow: inset 0 0 0 2px #e4dcef; }
+.cat-card.locked:hover { transform: none; }
+.cat-card.locked .card-art { position: relative; }
+.cat-card.locked .card-art .cat-svg { filter: brightness(0) opacity(.18); }
+.cat-card.locked .card-art .twinkle { display: none; }
+.lock-badge { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); font-size: 1.8rem; }
+.unlock-hint { font-size: .78rem; color: var(--ink); margin-top: 6px; line-height: 1.25; min-height: 2.5em; }
+.unlock-bar { height: 8px; border-radius: 999px; background: #e4dcef; overflow: hidden; margin: 6px 10px 2px; }
+.unlock-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #b388ff, #ff7a9a); }
+.unlock-count { font-size: .72rem; color: var(--muted); }
+.new-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: #ff5c8a; color: #fff;
+  font-size: .7rem; font-weight: 800;
+  padding: 2px 8px; border-radius: 999px;
+  animation: wishedPulse 1s ease-in-out infinite;
+}
+
+/* special cat effects */
+.fx-golden { filter: drop-shadow(0 0 8px rgba(255, 205, 60, .75)); }
+.fx-ghost { opacity: .8; animation: ghostFloat 2.6s ease-in-out infinite; }
+.twinkle { transform-box: fill-box; transform-origin: center; animation: twinkle 1.6s ease-in-out infinite; }
+
 .hat-picker {
   width: 100%;
   background: rgba(255, 255, 255, .8);
@@ -449,6 +481,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: rgba(60, 30, 50, .45);
 }
 .overlay.show { display: flex; animation: fadeIn .3s ease; }
+.overlay { overflow-y: auto; }
+.overlay .win-card { margin: auto; }
 .win-card {
   position: relative; z-index: 2;
   background: var(--paper);
@@ -470,7 +504,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: #f1ecff; border-radius: 14px; padding: 8px 10px;
 }
 .win-card .unlock:empty { display: none; }
-.win-card .unlock small { font-weight: 400; color: var(--muted); }
+.win-card .unlock small { font-weight: 400; color: var(--muted); display: block; }
+.win-card .unlock hr { border: none; border-top: 1px dashed #d6cbee; margin: 8px 0; }
+.new-cats { display: flex; justify-content: center; gap: 10px; margin-bottom: 4px; }
+.new-cat { font-size: .8rem; }
+.new-cat-art { width: 70px; height: 80px; margin: 0 auto; animation: revealCat .9s ease 1s backwards; }
+.new-cat-art .cat-svg { width: 100%; height: 100%; }
 .win-stars { display: flex; justify-content: center; gap: 6px; font-size: 2.6rem; line-height: 1; margin: 2px 0 6px; }
 .win-stars span { color: #e6dbe0; }
 .win-stars span.on { color: var(--gold); text-shadow: 0 2px 0 #e0a800; animation: starPop .5s cubic-bezier(.2, 1.6, .4, 1) backwards; }
@@ -507,6 +546,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @keyframes tremble { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
 @keyframes scareJump { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-70px) scale(1.05, .95); } 60% { transform: translateY(0) scale(1.08, .9); } }
 @keyframes starPop { from { transform: scale(0) rotate(-90deg); } }
+@keyframes ghostFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@keyframes twinkle { 0%, 100% { transform: scale(.3) rotate(0); opacity: .3; } 50% { transform: scale(1.2) rotate(45deg); opacity: 1; } }
+@keyframes revealCat { from { filter: brightness(0) opacity(.3); transform: scale(.6); } }
 @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
 
 @media (prefers-reduced-motion: reduce) {

@@ -31,6 +31,22 @@ A cozy browser game: choose a cat, then spoil them with pets, toys, treats and c
   - 🥒 a **scary cucumber** appears! The cat panics and loses happiness until you click the cucumber away.
 - **Stars & hats ⭐:** each win earns 1–3 stars depending on your time. Stars unlock hats in the **Dress-up** row (🎀 bow, 🌸 flower, 🧢 cap, 👑 crown, 🎩 top hat, 🎓 grad cap). Stars, best times and your chosen hat are saved in your browser.
 
+## Secret cats 🔒
+
+Seven hidden cats appear as mystery silhouettes until you unlock them. Each locked card shows its goal and your progress.
+
+| Cat | How to unlock |
+|-----|---------------|
+| ✨ Midas, the Golden Cat | Earn ★★★ with any cat |
+| 👻 Boo, the Ghost Cat | Win with 4 different cats |
+| 🌌 Cosmo, the Galaxy Cat | Catch 12 surprises |
+| 🌈 Prism, the Rainbow Cat | Reach a ×15 combo |
+| 🐯 Stripes, the Tiger Cub | Grant 20 wishes |
+| 🍔 Sir Chonkington, the Absolute Unit | Give 50 treats |
+| 🦁 King Leo, the Little Lion | Collect 20 stars |
+
+Progress counts across all your games, even ones you don't finish. Newly unlocked cats are revealed on the win screen and get a **NEW!** badge.
+
 ## Files
 
 - `index.html` contains the screens and the living room / kitchen scene (inline SVG)

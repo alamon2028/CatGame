@@ -54,7 +54,60 @@ const CATS = [
     favorite: 'catnip', decay: 1.4,
     bio: 'Royalty. Unimpressed by most things. Catnip is the exception.',
   },
+
+  // ----- Secret cats: hidden until unlocked -----
+  {
+    id: 'midas', name: 'Midas', breed: 'Golden Cat', pattern: 'golden', secret: true,
+    body: '#f6c945', dark: '#d9a21b', belly: '#fff1b8', eye: '#2fbf71', nose: '#e58a5c',
+    favorite: 'treat', decay: 1.2,
+    bio: 'Shines brighter than the golden treat. Expects only the finest snacks.',
+    unlock: { hint: 'Earn ★★★ with any cat', progress: (x) => [Math.max(0, ...Object.values(x.stars)), 3] },
+  },
+  {
+    id: 'boo', name: 'Boo', breed: 'Ghost Cat', pattern: 'ghost', secret: true,
+    body: '#eaf2ff', dark: '#b8c8e8', belly: '#ffffff', eye: '#7fd3ff', nose: '#c7b5f0',
+    favorite: 'catnip', decay: 1.0,
+    bio: 'A friendly phantom who haunts the couch. Catnip makes Boo extra spooky.',
+    unlock: { hint: 'Win with 4 different cats', progress: (x) => [Object.keys(x.stars).length, 4] },
+  },
+  {
+    id: 'cosmo', name: 'Cosmo', breed: 'Galaxy Cat', pattern: 'galaxy', secret: true,
+    body: '#2b1d5c', dark: '#1a1140', belly: '#4b3a8f', eye: '#ffe066', nose: '#c48cff',
+    favorite: 'toy', decay: 1.3,
+    bio: 'Fell from the stars while chasing a comet. Still chasing everything.',
+    unlock: { hint: 'Catch 12 surprises', progress: (x) => [x.stats.surprises, 12] },
+  },
+  {
+    id: 'prism', name: 'Prism', breed: 'Rainbow Cat', pattern: 'rainbow', secret: true,
+    body: '#ffffff', dark: '#d9d0f0', belly: '#ffffff', eye: '#b36bff', nose: '#ff8fb1',
+    favorite: 'pet', decay: 1.1,
+    bio: 'Every purr comes out in a different color. Loves gentle pets.',
+    unlock: { hint: 'Reach a ×15 combo', progress: (x) => [x.stats.bestCombo, 15] },
+  },
+  {
+    id: 'stripes', name: 'Stripes', breed: 'Tiger Cub', pattern: 'tabby', bold: true, secret: true,
+    body: '#ff8c1a', dark: '#2a1a10', belly: '#fff3e0', eye: '#f5c518', nose: '#d0705a',
+    favorite: 'toy', decay: 1.35,
+    bio: 'Practicing to be a big, scary tiger. Mostly pounces on yarn.',
+    unlock: { hint: 'Grant 20 wishes', progress: (x) => [x.stats.wishes, 20] },
+  },
+  {
+    id: 'chonk', name: 'Sir Chonkington', breed: 'Absolute Unit', pattern: 'tabby', chonk: true, secret: true,
+    body: '#c9b8a6', dark: '#9c8672', belly: '#f3e9de', eye: '#9ccc65', nose: '#d99a8e',
+    favorite: 'treat', decay: 0.9,
+    bio: 'A magnificent, round gentleman. Has never once said no to a treat.',
+    unlock: { hint: 'Give 50 treats', progress: (x) => [x.stats.treats, 50] },
+  },
+  {
+    id: 'leo', name: 'King Leo', breed: 'Little Lion', pattern: 'solid', mane: '#a0522d', secret: true,
+    body: '#e0a95b', dark: '#b07a35', belly: '#f7e3c1', eye: '#c08a1e', nose: '#8a5a3c',
+    favorite: 'catnip', decay: 1.5,
+    bio: 'Ruler of the living room. Demands catnip tributes from loyal subjects.',
+    unlock: { hint: 'Collect 20 stars', progress: (x) => [x.totalStars, 20] },
+  },
 ];
+const SECRET_CATS = CATS.filter((c) => c.secret);
+const RAINBOW = ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#4dabf7', '#9775fa'];
 
 // ---------- Actions ----------
 // Petting and toys give fewer points than treats and catnip.
@@ -117,19 +170,40 @@ const MOODS = [
 
 // ---------- Cat artwork (SVG) ----------
 const OUTLINE = 'rgba(60, 35, 50, .28)';
+let svgUid = 0;
+
+function sparkleStars(points, color) {
+  return points.map(([x, y, r = 6], i) => `<path class="twinkle" style="animation-delay:${(i * 0.37) % 1.6}s"
+    d="M${x} ${y - r} L${x + r / 4} ${y - r / 4} L${x + r} ${y} L${x + r / 4} ${y + r / 4} L${x} ${y + r} L${x - r / 4} ${y + r / 4} L${x - r} ${y} L${x - r / 4} ${y - r / 4} Z" fill="${color}"/>`).join('');
+}
+
+function maneShape(color) {
+  const pts = [];
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2;
+    const r = i % 2 ? 58 : 72;
+    pts.push(`${(100 + Math.cos(a) * r).toFixed(1)},${(92 + Math.sin(a) * r * 0.92).toFixed(1)}`);
+  }
+  return `<polygon points="${pts.join(' ')}" fill="${color}" stroke="${OUTLINE}" stroke-width="2.5" stroke-linejoin="round"/>`;
+}
+
 function catSVG(c, hatId = 'none') {
   const hat = HATS.find((h) => h.id === hatId);
   const fur = c.body, dark = c.dark;
+  const uid = `cat${++svgUid}`;
   let patternBody = '', patternHead = '', tailStroke = fur, tailExtra = '', pawFill = fur, muzzle = '';
   let earFill = fur, chest = c.belly;
+  let defs = '', sparkles = '', svgClass = '';
+  const bx = c.chonk ? 74 : 56, by = c.chonk ? 56 : 52;
+  const sw = c.bold ? 1.6 : 1; // stripe weight
 
   switch (c.pattern) {
     case 'tabby':
       patternHead = `
-        <path d="M100 40 L100 58 M86 43 L89 57 M114 43 L111 57" stroke="${dark}" stroke-width="5" stroke-linecap="round"/>
-        <path d="M54 82 L66 84 M55 94 L67 93 M146 82 L134 84 M145 94 L133 93" stroke="${dark}" stroke-width="4" stroke-linecap="round"/>`;
+        <path d="M100 40 L100 58 M86 43 L89 57 M114 43 L111 57" stroke="${dark}" stroke-width="${5 * sw}" stroke-linecap="round"/>
+        <path d="M54 82 L66 84 M55 94 L67 93 M146 82 L134 84 M145 94 L133 93" stroke="${dark}" stroke-width="${4 * sw}" stroke-linecap="round"/>`;
       patternBody = `
-        <path d="M52 140 Q62 146 60 158 M48 162 Q60 168 58 180 M148 140 Q138 146 140 158 M152 162 Q140 168 142 180" stroke="${dark}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+        <path d="M52 140 Q62 146 60 158 M48 162 Q60 168 58 180 M148 140 Q138 146 140 158 M152 162 Q140 168 142 180" stroke="${dark}" stroke-width="${6 * sw}" fill="none" stroke-linecap="round"/>`;
       tailExtra = `<path d="M150 190 Q198 178 186 128 Q180 102 164 106" stroke="${dark}" stroke-width="18" fill="none" stroke-linecap="round" stroke-dasharray="8 12"/>`;
       break;
     case 'tuxedo':
@@ -153,7 +227,36 @@ function catSVG(c, hatId = 'none') {
       pawFill = dark;
       muzzle = `<ellipse cx="100" cy="98" rx="27" ry="22" fill="${dark}" opacity=".85"/>`;
       break;
+    case 'golden':
+      svgClass = 'fx-golden';
+      patternHead = `<path d="M70 52 Q100 40 130 52" stroke="#fff6cf" stroke-width="5" fill="none" stroke-linecap="round" opacity=".8"/>`;
+      sparkles = sparkleStars([[34, 120, 8], [168, 150, 7], [44, 40, 6], [160, 70, 8], [100, 196, 6], [146, 196, 5]], '#fffbe6');
+      break;
+    case 'ghost':
+      svgClass = 'fx-ghost';
+      patternBody = `<path d="M60 196 Q70 186 80 196 Q90 206 100 196 Q110 186 120 196 Q130 206 140 196" stroke="${dark}" stroke-width="3" fill="none" opacity=".6"/>`;
+      sparkles = sparkleStars([[40, 60, 5], [166, 110, 6], [30, 170, 5]], '#bfe6ff');
+      break;
+    case 'galaxy': {
+      const dots = (pts) => pts.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${r > 1.8 ? '#ffe066' : '#ffffff'}" opacity=".9"/>`).join('');
+      patternHead = dots([[70, 58, 1.5], [128, 62, 2], [112, 50, 1.2], [62, 100, 1.4], [140, 98, 1.6], [90, 54, 1]]);
+      patternBody = dots([[60, 140, 2], [142, 150, 1.4], [70, 190, 1.5], [132, 186, 2.2], [52, 168, 1.2], [148, 172, 1.5]])
+        + `<path d="M92 162 A14 14 0 1 0 110 182 A11 11 0 1 1 92 162 Z" fill="#ffe066" opacity=".9"/>`;
+      tailExtra = `<path d="M150 190 Q198 178 186 128 Q180 102 164 106" stroke="#c48cff" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="2 14" opacity=".9"/>`;
+      sparkles = sparkleStars([[36, 50, 7], [170, 64, 6], [26, 150, 5], [176, 168, 6]], '#ffe066');
+      break;
+    }
+    case 'rainbow':
+      defs = `<clipPath id="${uid}-b"><ellipse cx="100" cy="165" rx="${bx}" ry="${by}"/></clipPath>
+        <linearGradient id="${uid}-t" x1="0" y1="1" x2="1" y2="0">${RAINBOW.map((col, i) => `<stop offset="${i / (RAINBOW.length - 1)}" stop-color="${col}"/>`).join('')}</linearGradient>`;
+      patternBody = `<g clip-path="url(#${uid}-b)" opacity=".8">${RAINBOW.map((col, i) => `<rect x="30" y="${113 + i * 18}" width="140" height="18" fill="${col}"/>`).join('')}</g>
+        <ellipse cx="100" cy="172" rx="30" ry="38" fill="#fff" opacity=".85"/>`;
+      patternHead = RAINBOW.slice(0, 4).map((col, i) => `<path d="M${76 + i * 3} ${60 - i * 4} Q100 ${44 - i * 4} ${124 - i * 3} ${60 - i * 4}" stroke="${col}" stroke-width="4" fill="none" stroke-linecap="round"/>`).join('');
+      tailStroke = `url(#${uid}-t)`;
+      sparkles = sparkleStars([[36, 60, 6], [168, 80, 6], [30, 160, 5]], '#ff8fb1');
+      break;
   }
+  const leoMane = c.mane ? maneShape(c.mane) : '';
 
   const mane = c.fluffy ? `
     <path d="M52 100 L40 92 L50 84 L38 72 L54 68 L48 56 M148 100 L160 92 L150 84 L162 72 L146 68 L152 56" stroke="${fur}" stroke-width="10" stroke-linejoin="round" fill="none"/>
@@ -161,7 +264,8 @@ function catSVG(c, hatId = 'none') {
   const tailWidth = c.fluffy ? 26 : 18;
 
   return `
-  <svg class="cat-svg" viewBox="0 0 200 230" xmlns="http://www.w3.org/2000/svg">
+  <svg class="cat-svg ${svgClass}" viewBox="0 0 200 230" xmlns="http://www.w3.org/2000/svg">
+    ${defs ? `<defs>${defs}</defs>` : ''}
     <ellipse class="shadow" cx="100" cy="220" rx="70" ry="9" fill="#000" opacity=".18"/>
     <g class="tail">
       <path d="M150 190 Q198 178 186 128 Q180 102 164 106" stroke="${OUTLINE}" stroke-width="${tailWidth + 5}" fill="none" stroke-linecap="round"/>
@@ -169,7 +273,7 @@ function catSVG(c, hatId = 'none') {
       ${tailExtra}
     </g>
     <g class="body">
-      <ellipse cx="100" cy="165" rx="56" ry="52" fill="${fur}" stroke="${OUTLINE}" stroke-width="2.5"/>
+      <ellipse cx="100" cy="165" rx="${bx}" ry="${by}" fill="${fur}" stroke="${OUTLINE}" stroke-width="2.5"/>
       <ellipse cx="100" cy="172" rx="30" ry="38" fill="${chest}"/>
       ${patternBody}
       <ellipse cx="78" cy="212" rx="17" ry="10" fill="${pawFill}" stroke="${OUTLINE}" stroke-width="2"/>
@@ -177,6 +281,7 @@ function catSVG(c, hatId = 'none') {
       <path d="M72 212 L72 218 M78 212 L78 219 M84 212 L84 218 M116 212 L116 218 M122 212 L122 219 M128 212 L128 218" stroke="${dark}" stroke-width="1.5" opacity=".5"/>
     </g>
     <g class="head">
+      ${leoMane}
       <polygon points="58,70 54,18 96,46" fill="${earFill}" stroke="${OUTLINE}" stroke-width="2.5" stroke-linejoin="round"/>
       <polygon points="142,70 146,18 104,46" fill="${earFill}" stroke="${OUTLINE}" stroke-width="2.5" stroke-linejoin="round"/>
       <polygon points="64,60 62,30 86,48" fill="${c.nose}" opacity=".55"/>
@@ -222,6 +327,7 @@ function catSVG(c, hatId = 'none') {
       </g>
       ${hat && hat.emoji ? `<text class="hat" x="${hat.x}" y="${hat.y}" font-size="${hat.size}" text-anchor="middle" transform="rotate(${hat.rot} ${hat.x} ${hat.y - hat.size / 3})">${hat.emoji}</text>` : ''}
     </g>
+    ${sparkles}
   </svg>`;
 }
 
@@ -244,6 +350,37 @@ function loadStars() {
 function saveStars(map) {
   try { localStorage.setItem('happyKittyStars', JSON.stringify(map)); } catch { /* ignore */ }
 }
+const DEFAULT_STATS = { surprises: 0, wishes: 0, treats: 0, bestCombo: 0 };
+function loadStats() {
+  try { return { ...DEFAULT_STATS, ...JSON.parse(localStorage.getItem('happyKittyStats') || '{}') }; } catch { return { ...DEFAULT_STATS }; }
+}
+function bumpStat(key, value = 1, mode = 'add') {
+  const st = loadStats();
+  st[key] = mode === 'max' ? Math.max(st[key], value) : st[key] + value;
+  try { localStorage.setItem('happyKittyStats', JSON.stringify(st)); } catch { /* ignore */ }
+}
+function loadMet() {
+  try { return JSON.parse(localStorage.getItem('happyKittyMet') || '[]'); } catch { return []; }
+}
+function markMet(id) {
+  const met = loadMet();
+  if (met.includes(id)) return;
+  met.push(id);
+  try { localStorage.setItem('happyKittyMet', JSON.stringify(met)); } catch { /* ignore */ }
+}
+function unlockContext() {
+  const stars = loadStars();
+  return { stars, stats: loadStats(), totalStars: Object.values(stars).reduce((a, b) => a + b, 0) };
+}
+function unlockProgress(cat, ctx = unlockContext()) {
+  if (!cat.secret) return { done: true, cur: 1, goal: 1 };
+  const [cur, goal] = cat.unlock.progress(ctx);
+  return { done: cur >= goal, cur: Math.min(cur, goal), goal };
+}
+const unlockedSecretIds = () => {
+  const ctx = unlockContext();
+  return SECRET_CATS.filter((c) => unlockProgress(c, ctx).done).map((c) => c.id);
+};
 const totalStars = () => Object.values(loadStars()).reduce((a, b) => a + b, 0);
 function loadHat() {
   try { return localStorage.getItem('happyKittyHat') || 'none'; } catch { return 'none'; }
@@ -310,6 +447,7 @@ const els = {
   winStats: $('#win-stats'), winBest: $('#win-best'), confetti: $('#confetti'),
   sound: $('#sound-btn'),
   wish: $('#wish'), wishIcon: $('#wish .wish-icon'), combo: $('#combo'), events: $('#events-layer'),
+  secretGrid: $('#secret-grid'), secretCount: $('#secret-count'),
   winStars: $('#win-stars'), winUnlock: $('#win-unlock'), hatRow: $('#hat-row'), starTotal: $('#star-total'),
 };
 
@@ -356,19 +494,45 @@ function buildHats() {
   });
 }
 
+function lockedCard(cat, prog) {
+  const card = document.createElement('button');
+  card.className = 'cat-card locked';
+  card.setAttribute('role', 'listitem');
+  card.setAttribute('aria-label', `Secret cat, locked. ${cat.unlock.hint}`);
+  card.dataset.id = cat.id;
+  card.innerHTML = `
+    <div class="card-art">${catSVG(cat)}<span class="lock-badge">🔒</span></div>
+    <div class="card-name">???</div>
+    <div class="card-breed">Secret cat</div>
+    <div class="unlock-hint">${cat.unlock.hint}</div>
+    <div class="unlock-bar"><i style="width:${(prog.cur / prog.goal) * 100}%"></i></div>
+    <div class="unlock-count">${prog.cur} / ${prog.goal}</div>`;
+  card.addEventListener('click', () => selectCat(cat));
+  return card;
+}
+
 function buildSelect() {
   buildHats();
   const best = loadBest();
   const stars = loadStars();
+  const ctx = unlockContext();
+  const met = loadMet();
   els.grid.innerHTML = '';
+  els.secretGrid.innerHTML = '';
+  const found = SECRET_CATS.filter((c) => unlockProgress(c, ctx).done).length;
+  els.secretCount.textContent = `${found} / ${SECRET_CATS.length} found`;
   CATS.forEach((cat) => {
+    const prog = unlockProgress(cat, ctx);
+    const target = cat.secret ? els.secretGrid : els.grid;
+    if (!prog.done) { target.appendChild(lockedCard(cat, prog)); return; }
     const diff = difficultyLabel(cat.decay);
     const card = document.createElement('button');
-    card.className = 'cat-card';
+    card.className = `cat-card${cat.secret ? ' secret' : ''}`;
     card.setAttribute('role', 'listitem');
     card.dataset.id = cat.id;
     card.innerHTML = `
       <div class="card-art mood-happy">${catSVG(cat, selectedHat)}</div>
+      ${cat.secret && !met.includes(cat.id) ? '<span class="new-badge">NEW!</span>' : ''}
       <div class="card-name">${cat.name}</div>
       <div class="card-breed">${cat.breed}</div>
       <div class="card-tags">
@@ -379,14 +543,29 @@ function buildSelect() {
       ${best[cat.id] ? `<div class="card-best">Best: ${best[cat.id].toFixed(1)}s</div>` : ''}`;
     card.addEventListener('click', () => selectCat(cat));
     card.addEventListener('dblclick', () => { selectCat(cat); startGame(); });
-    els.grid.appendChild(card);
+    target.appendChild(card);
   });
+  ensureSelectable();
   if (selectedCat) selectCat(selectedCat);
 }
 
 function selectCat(cat) {
-  selectedCat = cat;
   document.querySelectorAll('.cat-card').forEach((c) => c.classList.toggle('selected', c.dataset.id === cat.id));
+  const prog = unlockProgress(cat);
+  if (!prog.done) {
+    selectedCat = null;
+    els.details.innerHTML = `<strong>🔒 A secret cat!</strong> Who could it be…?
+      <span class="detail-line">To unlock: <b>${cat.unlock.hint}</b> (${prog.cur} / ${prog.goal})</span>`;
+    els.start.disabled = true;
+    els.start.textContent = 'Locked';
+    return;
+  }
+  selectedCat = cat;
+  if (cat.secret) {
+    markMet(cat.id);
+    const badge = document.querySelector(`.cat-card[data-id="${cat.id}"] .new-badge`);
+    if (badge) badge.remove();
+  }
   const diff = difficultyLabel(cat.decay);
   els.details.innerHTML = `
     <strong>${cat.name}</strong> — ${cat.bio}
@@ -394,6 +573,11 @@ function selectCat(cat) {
     <span class="detail-line">★★★ under ${starThresholds(cat).three.toFixed(0)}s · ★★ under ${starThresholds(cat).two.toFixed(0)}s</span>`;
   els.start.disabled = false;
   els.start.textContent = `Play with ${cat.name}!`;
+}
+
+// If saved progress no longer unlocks the selected cat, fall back gracefully.
+function ensureSelectable() {
+  if (selectedCat && !unlockProgress(selectedCat).done) selectedCat = null;
 }
 
 // ---------- Game state ----------
@@ -417,6 +601,7 @@ function startGame() {
     combo: 0, bestCombo: 0,
     wish: null, nextWishAt: 3, wishesGranted: 0, wishesMissed: 0,
     event: null, nextEventAt: 6, caught: 0, scared: false,
+    unlockedAtStart: unlockedSecretIds(),
   });
   els.holder.innerHTML = catSVG(cat, selectedHat);
   els.holder.className = 'cat-holder';
@@ -566,6 +751,8 @@ function doAction(action, originEl, { quiet = false } = {}) {
   const quick = state.elapsed - state.lastActionAt <= COMBO_WINDOW;
   state.combo = action !== state.lastAction && quick ? state.combo + 1 : 1;
   state.bestCombo = Math.max(state.bestCombo, state.combo);
+  bumpStat('bestCombo', state.combo, 'max');
+  if (action === 'treat') bumpStat('treats');
   state.lastAction = action;
   state.lastActionAt = state.elapsed;
   const bonus = comboBonus(state.combo);
@@ -618,6 +805,7 @@ function clearWish() {
 
 function grantWish() {
   state.wishesGranted++;
+  bumpStat('wishes');
   clearWish();
   state.nextWishAt = state.elapsed + 4 + Math.random() * 4;
   Sound.play('granted');
@@ -739,6 +927,7 @@ function catchEvent() {
   const r = rectIn(ev.el, L);
   const def = EVENTS[ev.type];
   state.caught++;
+  bumpStat('surprises');
   endEvent();
   floatTextAt(r.x + r.w / 2, r.y, `+${def.points}`, `ft-event ft-${ev.type}`);
   sparkleAt(r.x + r.w / 2, r.y + r.h / 2);
@@ -855,6 +1044,7 @@ function win() {
   if (earned > prevStars) { starMap[cat.id] = earned; saveStars(starMap); }
   const afterTotal = totalStars();
   const unlocked = HATS.filter((h) => h.stars > beforeTotal && h.stars <= afterTotal);
+  const newCats = SECRET_CATS.filter((sc) => unlockedSecretIds().includes(sc.id) && !state.unlockedAtStart.includes(sc.id));
 
   Sound.play('win');
   els.holder.className = 'cat-holder mood-ecstatic react-win';
@@ -872,9 +1062,16 @@ function win() {
   els.winBest.textContent = isRecord
     ? (prev ? `🏆 New best time! (was ${prev.toFixed(1)}s)` : '🏆 First win with this cat!')
     : `Best time: ${prev.toFixed(1)}s`;
-  els.winUnlock.innerHTML = unlocked.length
-    ? `🎁 New hat unlocked: ${unlocked.map((h) => `${h.emoji} ${h.name}`).join(', ')}! <br><small>Put it on from the Dress-up row.</small>`
-    : '';
+  const notes = [];
+  if (newCats.length) {
+    notes.push(`<div class="new-cats">${newCats.map((nc) => `<div class="new-cat"><div class="new-cat-art mood-happy">${catSVG(nc)}</div>${nc.name}</div>`).join('')}</div>
+      🔓 Secret cat${newCats.length > 1 ? 's' : ''} unlocked: ${newCats.map((nc) => `<b>${nc.name}</b> the ${nc.breed}`).join(', ')}!`);
+    Sound.play('granted');
+  }
+  if (unlocked.length) {
+    notes.push(`🎁 New hat unlocked: ${unlocked.map((h) => `${h.emoji} ${h.name}`).join(', ')}! <small>Put it on from the Dress-up row.</small>`);
+  }
+  els.winUnlock.innerHTML = notes.join('<hr>');
   setTimeout(() => {
     els.win.classList.add('show');
     makeConfetti();
