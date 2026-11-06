@@ -31,6 +31,16 @@ A cozy browser game: choose a cat, then spoil them with pets, toys, treats and c
   - 🥒 a **scary cucumber** appears! The cat panics and loses happiness until you click the cucumber away.
 - **Stars & hats ⭐:** each win earns 1–3 stars depending on your time. Stars unlock hats in the **Dress-up** row (🎀 bow, 🌸 flower, 🧢 cap, 👑 crown, 🎩 top hat, 🎓 grad cap). Stars, best times and your chosen hat are saved in your browser.
 
+## Rooms 🏠
+
+Pick where to play from the **Room** row on the choose-your-cat screen. New rooms unlock as you progress, and each has its own surprise:
+
+| Room | What's there | How to unlock |
+|------|--------------|---------------|
+| 🛋️ Living Room | Kitchen and living room. The toy mouse 🐁 visits. | Open from the start |
+| 🛏️ Bedroom | Cat trees with a condo, wall steps, crinkle tunnels, fairy lights and a starry window. A feather wand 🪶 pops out to play. | Win 3 games |
+| 🌿 Catio | A screened porch with rope bridges, a hammock, cat grass and a garden view. Birds 🐦 land outside the screen. | Collect 12 stars |
+
 ## Secret cats 🔒
 
 Seven hidden cats appear as mystery silhouettes until you unlock them. Each locked card shows its goal and your progress.
@@ -49,6 +59,7 @@ Progress counts across all your games, even ones you don't finish. Newly unlocke
 
 ## Files
 
-- `index.html` contains the screens and the living room / kitchen scene (inline SVG)
+- `index.html` contains the screens
+- `rooms.js` holds the room artwork (inline SVG) and the room unlock rules
 - `style.css` holds the layout, cat moods and animations
 - `game.js` has the cats, game logic, cat artwork generator and sound effects (Web Audio)

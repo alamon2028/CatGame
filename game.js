@@ -139,7 +139,11 @@ const EVENTS = {
   butterfly: { emoji: '🦋', label: 'Catch the butterfly!', points: 6,  weight: 3 },
   golden:    { emoji: '🌟', label: 'Grab the golden treat!', points: 15, weight: 2 },
   cucumber:  { emoji: '🥒', label: 'Remove the scary cucumber!', points: 2, weight: 2 },
+  bird:      { emoji: '🐦', label: 'Chirp at the bird!', points: 7, weight: 4, rooms: ['catio'] },
+  feather:   { emoji: '🪶', label: 'Swat the feather wand!', points: 7, weight: 4, rooms: ['bedroom'] },
 };
+EVENTS.mouse.rooms = ['living', 'bedroom'];
+EVENTS.butterfly.rooms = ['living', 'catio'];
 const CUCUMBER_DRAIN = 3; // happiness lost per second while the cucumber is there
 
 // Hats are unlocked with stars. Up to 3 stars per cat, based on win time.
@@ -350,7 +354,7 @@ function loadStars() {
 function saveStars(map) {
   try { localStorage.setItem('happyKittyStars', JSON.stringify(map)); } catch { /* ignore */ }
 }
-const DEFAULT_STATS = { surprises: 0, wishes: 0, treats: 0, bestCombo: 0 };
+const DEFAULT_STATS = { surprises: 0, wishes: 0, treats: 0, bestCombo: 0, wins: 0 };
 function loadStats() {
   try { return { ...DEFAULT_STATS, ...JSON.parse(localStorage.getItem('happyKittyStats') || '{}') }; } catch { return { ...DEFAULT_STATS }; }
 }
@@ -370,10 +374,15 @@ function markMet(id) {
 }
 function unlockContext() {
   const stars = loadStars();
-  return { stars, stats: loadStats(), totalStars: Object.values(stars).reduce((a, b) => a + b, 0) };
+  const stats = loadStats();
+  return {
+    stars, stats,
+    totalStars: Object.values(stars).reduce((a, b) => a + b, 0),
+    wins: Math.max(stats.wins, Object.keys(stars).length), // counts wins from before this stat existed
+  };
 }
 function unlockProgress(cat, ctx = unlockContext()) {
-  if (!cat.secret) return { done: true, cur: 1, goal: 1 };
+  if (!cat.unlock) return { done: true, cur: 1, goal: 1 };
   const [cur, goal] = cat.unlock.progress(ctx);
   return { done: cur >= goal, cur: Math.min(cur, goal), goal };
 }
@@ -381,6 +390,16 @@ const unlockedSecretIds = () => {
   const ctx = unlockContext();
   return SECRET_CATS.filter((c) => unlockProgress(c, ctx).done).map((c) => c.id);
 };
+const unlockedRoomIds = () => {
+  const ctx = unlockContext();
+  return ROOMS.filter((r) => unlockProgress(r, ctx).done).map((r) => r.id);
+};
+function loadRoom() {
+  try { return localStorage.getItem('happyKittyRoom') || 'living'; } catch { return 'living'; }
+}
+function saveRoom(id) {
+  try { localStorage.setItem('happyKittyRoom', id); } catch { /* ignore */ }
+}
 const totalStars = () => Object.values(loadStars()).reduce((a, b) => a + b, 0);
 function loadHat() {
   try { return localStorage.getItem('happyKittyHat') || 'none'; } catch { return 'none'; }
@@ -447,6 +466,7 @@ const els = {
   winStats: $('#win-stats'), winBest: $('#win-best'), confetti: $('#confetti'),
   sound: $('#sound-btn'),
   wish: $('#wish'), wishIcon: $('#wish .wish-icon'), combo: $('#combo'), events: $('#events-layer'),
+  room: $('#room'), roomRow: $('#room-row'),
   secretGrid: $('#secret-grid'), secretCount: $('#secret-count'),
   winStars: $('#win-stars'), winUnlock: $('#win-unlock'), hatRow: $('#hat-row'), starTotal: $('#star-total'),
 };
@@ -511,7 +531,40 @@ function lockedCard(cat, prog) {
   return card;
 }
 
+let selectedRoom = loadRoom();
+
+function buildRooms() {
+  const ctx = unlockContext();
+  if (!ROOMS.some((r) => r.id === selectedRoom && unlockProgress(r, ctx).done)) selectedRoom = 'living';
+  els.roomRow.innerHTML = '';
+  ROOMS.forEach((room) => {
+    const prog = unlockProgress(room, ctx);
+    const b = document.createElement('button');
+    b.className = `room-btn${prog.done ? '' : ' locked'}`;
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(room.id === selectedRoom));
+    b.title = prog.done ? (room.blurb || room.name) : `${room.name}: ${room.unlock.hint}`;
+    b.innerHTML = `
+      <div class="room-thumb">${renderRoom(room, 'room-thumb-svg')}${prog.done ? '' : '<span class="room-lock">🔒</span>'}</div>
+      <div class="room-name">${room.emoji} ${room.name}</div>
+      ${prog.done ? '' : `<div class="room-hint">${room.unlock.hint} · ${prog.cur}/${prog.goal}</div>
+        <div class="unlock-bar"><i style="width:${(prog.cur / prog.goal) * 100}%"></i></div>`}`;
+    b.addEventListener('click', () => {
+      if (!prog.done) {
+        els.details.innerHTML = `<strong>🔒 ${room.emoji} ${room.name}</strong> — ${room.blurb}
+          <span class="detail-line">To unlock: <b>${room.unlock.hint}</b> (${prog.cur} / ${prog.goal})</span>`;
+        return;
+      }
+      selectedRoom = room.id;
+      saveRoom(room.id);
+      buildRooms();
+    });
+    els.roomRow.appendChild(b);
+  });
+}
+
 function buildSelect() {
+  buildRooms();
   buildHats();
   const best = loadBest();
   const stars = loadStars();
@@ -602,8 +655,12 @@ function startGame() {
     wish: null, nextWishAt: 3, wishesGranted: 0, wishesMissed: 0,
     event: null, nextEventAt: 6, caught: 0, scared: false,
     unlockedAtStart: unlockedSecretIds(),
+    roomsAtStart: unlockedRoomIds(),
+    room: ROOMS.find((r) => r.id === selectedRoom) || ROOMS[0],
   });
   els.holder.innerHTML = catSVG(cat, selectedHat);
+  els.room.innerHTML = renderRoom(state.room);
+  els.room.style.background = state.room.bg;
   els.holder.className = 'cat-holder';
   els.hudName.textContent = `${cat.name}'s happiness`;
   els.fx.innerHTML = '';
@@ -826,7 +883,9 @@ function missWish() {
 
 // ---------- Surprise events ----------
 function pickEventType() {
-  const entries = Object.entries(EVENTS).filter(([k]) => k !== 'cucumber' || state.elapsed > 8);
+  const entries = Object.entries(EVENTS)
+    .filter(([k, e]) => !e.rooms || e.rooms.includes(state.room.id))
+    .filter(([k]) => k !== 'cucumber' || state.elapsed > 8);
   let r = Math.random() * entries.reduce((a, [, e]) => a + e.weight, 0);
   for (const [k, e] of entries) { r -= e.weight; if (r <= 0) return k; }
   return entries[0][0];
@@ -890,6 +949,41 @@ function spawnEvent() {
       say('✨ Shiny! ✨', 1200);
       break;
     }
+    case 'bird': {
+      const px = w * (0.15 + Math.random() * 0.7);
+      const py = h * (0.08 + Math.random() * 0.22);
+      const fromRight = Math.random() < 0.5;
+      const sx = fromRight ? w + 60 : -60;
+      const ex = fromRight ? -60 : w + 60;
+      const flip = fromRight ? 1 : -1; // emoji faces left
+      anim = el.animate([
+        { transform: `translate(${sx}px, ${py - 80}px) scaleX(${flip})` },
+        { transform: `translate(${px}px, ${py}px) scaleX(${flip})`, offset: 0.2 },
+        { transform: `translate(${px}px, ${py - 8}px) scaleX(${flip}) rotate(-8deg)`, offset: 0.35 },
+        { transform: `translate(${px}px, ${py}px) scaleX(${flip})`, offset: 0.5 },
+        { transform: `translate(${px}px, ${py - 8}px) scaleX(${flip}) rotate(8deg)`, offset: 0.65 },
+        { transform: `translate(${px}px, ${py}px) scaleX(${flip})`, offset: 0.8 },
+        { transform: `translate(${ex}px, ${py - 120}px) scaleX(${-flip})` },
+      ], { duration: 4200, easing: 'ease-in-out' });
+      say('*chatter chatter* 🐦', 1400);
+      Sound.play('squeak');
+      break;
+    }
+    case 'feather': {
+      const fx = w * (0.08 + Math.random() * 0.16);
+      const fy = h - 120;
+      anim = el.animate([
+        { transform: `translate(${fx}px, ${fy + 90}px) rotate(-30deg)`, opacity: 0 },
+        { transform: `translate(${fx}px, ${fy}px) rotate(20deg)`, opacity: 1, offset: 0.12 },
+        { transform: `translate(${fx + 30}px, ${fy - 30}px) rotate(-25deg)`, offset: 0.3 },
+        { transform: `translate(${fx - 10}px, ${fy - 10}px) rotate(25deg)`, offset: 0.48 },
+        { transform: `translate(${fx + 40}px, ${fy - 40}px) rotate(-20deg)`, offset: 0.66 },
+        { transform: `translate(${fx}px, ${fy}px) rotate(15deg)`, opacity: 1, offset: 0.85 },
+        { transform: `translate(${fx}px, ${fy + 90}px) rotate(-30deg)`, opacity: 0 },
+      ], { duration: 3800, easing: 'ease-in-out' });
+      say('!!! The feather!', 1400);
+      break;
+    }
     case 'cucumber': {
       const side = Math.random() < 0.5 ? -1 : 1;
       const x = Math.max(10, Math.min(w - 70, c.x + c.w / 2 + side * (c.w * 0.55) - 30));
@@ -934,6 +1028,8 @@ function catchEvent() {
   switch (ev.type) {
     case 'mouse': react('toy'); say('Got it!! 🐁', 1400); Sound.play('catch'); break;
     case 'butterfly': react('toy'); say('Pounce! 🦋', 1400); Sound.play('catch'); break;
+    case 'bird': react('toy'); say('Ek-ek-ek! 🐦', 1400); Sound.play('catch'); break;
+    case 'feather': react('toy'); say('Got the feather!', 1400); Sound.play('catch'); break;
     case 'golden': react('treat'); say('GOLDEN TREAT!! 🌟', 1600); Sound.play('granted'); burstHearts(8); break;
     case 'cucumber': say('Phew… thank you!', 1600); Sound.play('pet'); break;
   }
@@ -1042,6 +1138,7 @@ function win() {
   const beforeTotal = totalStars();
   const prevStars = starMap[cat.id] || 0;
   if (earned > prevStars) { starMap[cat.id] = earned; saveStars(starMap); }
+  bumpStat('wins');
   const afterTotal = totalStars();
   const unlocked = HATS.filter((h) => h.stars > beforeTotal && h.stars <= afterTotal);
   const newCats = SECRET_CATS.filter((sc) => unlockedSecretIds().includes(sc.id) && !state.unlockedAtStart.includes(sc.id));
@@ -1067,6 +1164,11 @@ function win() {
     notes.push(`<div class="new-cats">${newCats.map((nc) => `<div class="new-cat"><div class="new-cat-art mood-happy">${catSVG(nc)}</div>${nc.name}</div>`).join('')}</div>
       🔓 Secret cat${newCats.length > 1 ? 's' : ''} unlocked: ${newCats.map((nc) => `<b>${nc.name}</b> the ${nc.breed}`).join(', ')}!`);
     Sound.play('granted');
+  }
+  const newRooms = ROOMS.filter((r) => unlockedRoomIds().includes(r.id) && !state.roomsAtStart.includes(r.id));
+  if (newRooms.length) {
+    notes.push(`<div class="new-rooms">${newRooms.map((r) => `<div class="new-room">${renderRoom(r, 'room-thumb-svg')}</div>`).join('')}</div>
+      🏠 New room unlocked: ${newRooms.map((r) => `<b>${r.emoji} ${r.name}</b>`).join(', ')}! <small>Pick it from the Room row.</small>`);
   }
   if (unlocked.length) {
     notes.push(`🎁 New hat unlocked: ${unlocked.map((h) => `${h.emoji} ${h.name}`).join(', ')}! <small>Put it on from the Dress-up row.</small>`);
