@@ -4,28 +4,41 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Happy Kitty</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- ============ CHOOSE YOUR CAT ============ -->
   <section id="select-screen" class="screen active">
-    <header class="select-header">
-      <h1>Happy Kitty</h1>
-      <p>Choose your cat, then spoil them with pets, toys, treats and catnip until they're purr-fectly happy!</p>
-    </header>
-    <div id="cat-grid" class="cat-grid" role="list"></div>
-    <h2 class="secret-title">✨ Secret cats <span id="secret-count" class="secret-count"></span></h2>
-    <div id="secret-grid" class="cat-grid secret-grid" role="list"></div>
+    <div class="select-inner">
+      <header class="select-header">
+        <span class="kicker">A cozy cat-care game</span>
+        <h1>Happy Kitty</h1>
+        <p>Choose your cat, then spoil them with pets, toys, treats and catnip until they're purr-fectly happy!</p>
+      </header>
+
+      <h2 class="section-title">Choose your cat</h2>
+      <div id="cat-grid" class="cat-grid" role="list"></div>
+
+      <h2 class="section-title secret-title">✨ Secret cats <span id="secret-count" class="secret-count"></span></h2>
+      <div id="secret-grid" class="cat-grid secret-grid" role="list"></div>
+
+      <div class="pickers">
+        <div class="hat-picker room-picker">
+          <div class="hat-title">Room</div>
+          <div id="room-row" class="room-row" role="radiogroup" aria-label="Choose a room"></div>
+        </div>
+        <div class="hat-picker">
+          <div class="hat-title">Dress-up <span id="star-total" class="star-total"></span></div>
+          <div id="hat-row" class="hat-row" role="radiogroup" aria-label="Choose a hat"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="select-footer">
-      <div class="hat-picker room-picker">
-        <div class="hat-title">Room</div>
-        <div id="room-row" class="room-row" role="radiogroup" aria-label="Choose a room"></div>
-      </div>
-      <div class="hat-picker">
-        <div class="hat-title">Dress-up <span id="star-total" class="star-total"></span></div>
-        <div id="hat-row" class="hat-row" role="radiogroup" aria-label="Choose a hat"></div>
-      </div>
-      <div id="cat-details" class="cat-details" aria-live="polite"></div>
+      <div id="cat-details" class="cat-details" aria-live="polite"><span class="details-hint">Tap a cat to meet them, then press play.</span></div>
       <button id="start-btn" class="big-btn" disabled>Pick a cat</button>
     </div>
   </section>
