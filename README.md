@@ -37,9 +37,9 @@ Pick where to play from the **Room** row on the choose-your-cat screen. New room
 
 | Room | What's there | How to unlock |
 |------|--------------|---------------|
-| 🛋️ Living Room | Kitchen and living room. The toy mouse 🐁 visits. | Open from the start |
-| 🛏️ Bedroom | Cat trees with a condo, wall steps, crinkle tunnels, fairy lights and a starry window. A feather wand 🪶 pops out to play. | Win 3 games |
-| 🌿 Catio | A screened porch with rope bridges, a hammock, cat grass and a garden view. Birds 🐦 land outside the screen. | Collect 12 stars |
+| 🛋️ Living Room & Kitchen | A sunny living room (couch, window, plant, swinging pendant lamp, big comfy rug) with a kitchen corner: mint tiles, cabinets, hanging pans, a fridge, and a counter with a treat jar, kettle and fruit bowl. The toy mouse 🐁 visits. | Open from the start |
+| 🛏️ Cozy Bedroom | A tall cat tree with a condo, a smaller cat tree with a dangling pompom, zig-zag wall steps over the bed, two crinkle tunnels, fairy lights, a starry night window, a swinging star mobile and a cat-bed basket. A feather wand 🪶 pops out to play. | Win 3 games |
+| 🌻 Sunny Catio | A screened-in patio with a cat tree, a hanging plant, sunflowers and a garden view. Birds 🐦 come to visit. | Collect 8 stars |
 
 ## Secret cats 🔒
 
@@ -61,5 +61,5 @@ Progress counts across all your games, even ones you don't finish. Newly unlocke
 
 - `index.html` contains the screens
 - `rooms.js` holds the room artwork (inline SVG) and the room unlock rules
-- `style.css` holds the layout, cat moods and animations
+- `style.css` holds the storybook styling, layout, cat moods and animations (fonts: Fredoka and Nunito from Google Fonts, with system fallbacks)
 - `game.js` has the cats, game logic, cat artwork generator and sound effects (Web Audio)
